@@ -10,10 +10,18 @@ useDefault = true
 [allowlist]
 description = "VTuberSystemBase 固有の false positive 除外"
 
-# RFC 6455 §4.2.2 の WebSocket ハンドシェイク例ベクタのみをピンポイントで除外する。
-#   - dGhlIHNhbXBsZSBub25jZQ==      ("the sample nonce" を Base64 化したサンプル文字列)
-#   - s3pPLMBiTxaQ9kYGzzhZRbK+xOo=  (上記から算出される Sec-WebSocket-Accept 期待値)
-# これらは IETF が公開する標準テストベクタであり、実在する秘密情報ではない。
+# HandshakeProcessor (WebSocket ハンドシェイク) のテストベクタのみをピンポイントで除外する。
+# いずれも実在する API キー・認証トークンではなく、SHA-1 計算検証用のサンプル文字列。
+#
+#   [1] RFC 6455 §4.2.2 の規範例ペア
+#       - dGhlIHNhbXBsZSBub25jZQ==      ("the sample nonce" を Base64 化したサンプル)
+#       - s3pPLMBiTxaQ9kYGzzhZRbK+xOo=  (上記から算出される Sec-WebSocket-Accept 期待値)
+#       IETF が公開する標準テストベクタ。
+#
+#   [2] HandshakeProcessorTests.cs の独立検証用ペア
+#       - x3JJHMbDL1EzLkh9GBhXDw==      (テスト用に生成した 16 バイト乱数を Base64 化したサンプル key)
+#       - HSmrc0sMlYUkAGmm5OPpG2HaGWk=  (上記から PowerShell SHA1 で事前計算した期待 accept)
+#       ComputeAccept_AnotherKnownKey_ReturnsExpectedDigest で利用。
 #
 # 注意: パス単位の除外 (paths = [...]) は採用しない。ファイル全体を allowlist 化すると
 # 将来そのファイルへ実機密情報が混入した際に検知漏れする恐れがあるため、
@@ -21,4 +29,6 @@ description = "VTuberSystemBase 固有の false positive 除外"
 regexes = [
   '''dGhlIHNhbXBsZSBub25jZQ==''',
   '''s3pPLMBiTxaQ9kYGzzhZRbK\+xOo=''',
+  '''x3JJHMbDL1EzLkh9GBhXDw==''',
+  '''HSmrc0sMlYUkAGmm5OPpG2HaGWk=''',
 ]
