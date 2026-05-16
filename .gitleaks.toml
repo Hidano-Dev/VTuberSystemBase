@@ -1,0 +1,29 @@
+# gitleaks 設定ファイル
+# 参考: https://github.com/gitleaks/gitleaks/blob/master/config/gitleaks.toml
+#
+# gitleaks のデフォルトルールセットを継承しつつ、本リポジトリ固有の
+# false positive を allowlist で除外する。
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "VTuberSystemBase 固有の false positive 除外"
+
+# 1) RFC 6455 §4.2.2 の WebSocket ハンドシェイク例ベクタ
+#    - dGhlIHNhbXBsZSBub25jZQ==  ("the sample nonce" を Base64 化したサンプル)
+#    - s3pPLMBiTxaQ9kYGzzhZRbK+xOo=  (上記から算出される Sec-WebSocket-Accept 期待値)
+#    これらは IETF が公開する標準テストベクタであり、実在する秘密情報ではない。
+#
+# 2) 本リポジトリの仕様ドキュメント / テストコード上でも同様の RFC 例ベクタを
+#    引用する可能性があるため、値そのものを正規表現で除外する。
+regexes = [
+  '''dGhlIHNhbXBsZSBub25jZQ==''',
+  '''s3pPLMBiTxaQ9kYGzzhZRbK\+xOo=''',
+]
+
+# Kiro spec / 設計ドキュメントは英数字 Base64 風の擬似値や識別子を多用するため、
+# 必要に応じてパスベースでも除外する（必要最小限に絞る）。
+paths = [
+  '''\.kiro/specs/core-ipc-foundation/tasks\.md''',
+]
