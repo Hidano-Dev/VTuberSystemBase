@@ -32,7 +32,7 @@
   "samples": [
     {
       "displayName": "Integrated Demo Scene Walkthrough",
-      "description": "Step-by-step instructions for constructing the MainDemo.unity scene that wires every tab + adapter into a single PlayMode session.",
+      "description": "Ready-to-play MainDemo.unity + IntegratedDemoSkinProfile.asset + 4 UXML (Root / Character / Stage / Camera) that wire every tab + adapter into a single PlayMode session. Import, open MainDemo.unity, press Play.",
       "path": "Samples~/IntegratedDemo"
     }
   ]

@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c9a2b1e7f3d40e1bc8d5e6a9b0f1e2d, type: 3}
+  m_Name: IntegratedDemoSkinProfile
+  m_EditorClassIdentifier: UiToolkitShell.Runtime::VTuberSystemBase.UiToolkitShell.Skin.UiToolkitShellSkinProfile
+  RootVisualTreeAsset: {fileID: 9197481963319205126, guid: 66d5fbd8fa4f491faf7b2b8f50c34f14, type: 3}
+  RootStyleSheets: []
+  CharacterTabVisualTreeAsset: {fileID: 9197481963319205126, guid: 41f8436505aa44478f80854fc5c14440, type: 3}
+  CharacterTabStyleSheets: []
+  StageLightingTabVisualTreeAsset: {fileID: 9197481963319205126, guid: e235ceb92ca74cec851fec7d40742406, type: 3}
+  StageLightingTabStyleSheets: []
+  CameraSwitcherTabVisualTreeAsset: {fileID: 9197481963319205126, guid: d7670714f5a94cfbb62b3f375de82386, type: 3}
+  CameraSwitcherTabStyleSheets: []
+  CommonUiStyleSheets: []

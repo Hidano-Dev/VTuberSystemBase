@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  IntegratedDemo Character Tab UXML.
+  CharacterSelectionTab.View.ViewQueryHelpers の RequireByName で
+  解決される region 名をすべて含む必要がある。
+-->
+<UXML xmlns="UnityEngine.UIElements"
+      xmlns:engine="UnityEngine.UIElements"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <VisualElement name="vsb-char-tab" class="vsb-tab-root vsb-tab-root--character vsb-char-tab" style="flex-grow: 1;">
+        <VisualElement name="vsb-char-tab__preset-bar"     class="vsb-char-tab__preset-bar" />
+        <VisualElement name="vsb-char-tab__player-cards"   class="vsb-char-tab__player-cards" />
+        <VisualElement name="vsb-char-tab__avatar-catalog" class="vsb-char-tab__avatar-catalog" />
+        <VisualElement name="vsb-char-tab__settings-panel" class="vsb-char-tab__settings-panel" style="flex-grow: 1;" />
+        <VisualElement name="vsb-char-tab__diagnostics"    class="vsb-char-tab__diagnostics" />
+    </VisualElement>
+</UXML>

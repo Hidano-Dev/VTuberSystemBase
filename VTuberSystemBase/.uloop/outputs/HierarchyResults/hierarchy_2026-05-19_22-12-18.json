@@ -1,0 +1,34 @@
+{
+  "ExportTimestamp": "2026-05-19 22:12:18",
+  "Context": {
+    "sceneType": "editor",
+    "sceneName": "MainDemo",
+    "nodeCount": 1,
+    "maxDepth": 0
+  },
+  "Hierarchy": [
+    {
+      "sceneName": "MainDemo",
+      "stats": {
+        "rootCount": 1,
+        "nodeCount": 1,
+        "maxDepth": 0
+      },
+      "roots": [
+        {
+          "name": "IntegratedDemoRoot",
+          "isActive": true,
+          "components": [
+            "Transform",
+            "OutputSceneBootstrapper",
+            "IntegratedDemoBootstrap"
+          ],
+          "siblingIndex": 0,
+          "tag": "Untagged",
+          "layer": 0,
+          "children": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  IntegratedDemo Stage Tab UXML.
+  StageLightingVolumeTab.View.StageLightingVolumeTabPanel が Require する
+  element 名をすべて含む。Stage タブのみ "vsb-stage-tab__*" 接頭辞ではなく
+  接頭辞なしの命名規約。
+-->
+<UXML xmlns="UnityEngine.UIElements"
+      xmlns:engine="UnityEngine.UIElements"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <VisualElement name="vsb-stage-tab" class="vsb-tab-root vsb-tab-root--stage-lighting vsb-stage-tab" style="flex-grow: 1;">
+        <VisualElement name="preview-panel"           class="vsb-stage-tab__preview-panel" />
+        <VisualElement name="preset-section"          class="vsb-stage-tab__preset-section">
+            <Label         name="active-preset-label" class="vsb-stage-tab__active-preset-label" text="(none)" />
+            <VisualElement name="preset-list"         class="vsb-stage-tab__preset-list" />
+            <VisualElement name="preset-actions"      class="vsb-stage-tab__preset-actions" style="flex-direction: row;">
+                <Button name="preset-create"    class="vsb-stage-tab__preset-button" text="Create" />
+                <Button name="preset-rename"    class="vsb-stage-tab__preset-button" text="Rename" />
+                <Button name="preset-duplicate" class="vsb-stage-tab__preset-button" text="Duplicate" />
+                <Button name="preset-delete"    class="vsb-stage-tab__preset-button" text="Delete" />
+                <Button name="preset-activate"  class="vsb-stage-tab__preset-button" text="Activate" />
+            </VisualElement>
+        </VisualElement>
+        <VisualElement name="stage-selection-section" class="vsb-stage-tab__stage-selection-section">
+            <VisualElement name="stage-list"          class="vsb-stage-tab__stage-list" />
+        </VisualElement>
+        <VisualElement name="light-list-section" class="vsb-stage-tab__light-list-section">
+            <VisualElement name="light-list"          class="vsb-stage-tab__light-list" />
+        </VisualElement>
+        <VisualElement name="light-editor-section" class="vsb-stage-tab__light-editor-section" />
+        <VisualElement name="volume-override-section" class="vsb-stage-tab__volume-override-section" style="flex-grow: 1;">
+            <VisualElement name="volume-override-list" class="vsb-stage-tab__volume-override-list" />
+        </VisualElement>
+    </VisualElement>
+</UXML>

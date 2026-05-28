@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-16"?>
+<test-run id="2" testcasecount="1" result="Failed" total="1" passed="0" failed="1" skipped="0" start-time="2026-05-28 13:11:29" end-time="2026-05-28 13:11:30" duration="0.996">
+  <test-suite type="TestSuite" name="VTuberSystemBase" fullname="VTuberSystemBase" result="Failed" start-time="2026-05-28 13:11:29" end-time="2026-05-28 13:11:30" duration="0.996" total="1" passed="0" failed="1" skipped="0">
+    <test-suite type="TestSuite" name="VTuberSystemBase.CoreIpc.Tests.Editor.dll" fullname="D:/Personal/Repositries/VTuberSystemBase/VTuberSystemBase/Library/ScriptAssemblies/VTuberSystemBase.CoreIpc.Tests.Editor.dll" result="Failed" start-time="2026-05-28 13:11:29" end-time="2026-05-28 13:11:30" duration="0.897" total="1" passed="0" failed="1" skipped="0">
+      <test-suite type="TestSuite" name="VTuberSystemBase" fullname="VTuberSystemBase" result="Failed" start-time="2026-05-28 13:11:29" end-time="2026-05-28 13:11:30" duration="0.798" total="1" passed="0" failed="1" skipped="0">
+        <test-suite type="TestSuite" name="CoreIpc" fullname="VTuberSystemBase.CoreIpc" result="Failed" start-time="2026-05-28 13:11:29" end-time="2026-05-28 13:11:30" duration="0.698" total="1" passed="0" failed="1" skipped="0">
+          <test-suite type="TestSuite" name="Tests" fullname="VTuberSystemBase.CoreIpc.Tests" result="Failed" start-time="2026-05-28 13:11:29" end-time="2026-05-28 13:11:30" duration="0.599" total="1" passed="0" failed="1" skipped="0">
+            <test-suite type="TestSuite" name="Editor" fullname="VTuberSystemBase.CoreIpc.Tests.Editor" result="Failed" start-time="2026-05-28 13:11:29" end-time="2026-05-28 13:11:30" duration="0.499" total="1" passed="0" failed="1" skipped="0">
+              <test-suite type="VTuberSystemBase.CoreIpc.Tests.Editor.CoreIpcRuntimeHostTests" name="CoreIpcRuntimeHostTests" fullname="VTuberSystemBase.CoreIpc.Tests.Editor.CoreIpcRuntimeHostTests" result="Failed" start-time="2026-05-28 13:11:29" end-time="2026-05-28 13:11:30" duration="0.399" total="1" passed="0" failed="1" skipped="0">
+                <test-case name="Initialize_TransitionsThroughInitializingToRunning" fullname="VTuberSystemBase.CoreIpc.Tests.Editor.CoreIpcRuntimeHostTests.Initialize_TransitionsThroughInitializingToRunning" result="Failed" start-time="2026-05-28 13:11:29" end-time="2026-05-28 13:11:30" duration="0.299">
+                  <failure>
+                    <message>  Expected: greater than or equal to 1
+  But was:  0
+</message>
+                    <stack-trace>at VTuberSystemBase.CoreIpc.Tests.Editor.CoreIpcRuntimeHostTests.Initialize_TransitionsThroughInitializingToRunning () [0x000f7] in .\Packages\com.hidano.vtuber-system-base.core-ipc-foundation\Tests\Editor\CoreIpcRuntimeHostTests.cs:79
+at UnityEngine.TestTools.TestRunner.TestTaskWrapper+&lt;Execute&gt;d__2.MoveNext () [0x00063] in .\Library\PackageCache\com.unity.test-framework@0b7a23ab2e1d\UnityEngine.TestRunner\TestRunner\TestTaskWrapper.cs:31
+at UnityEngine.TestTools.TestEnumerator+&lt;Execute&gt;d__7.MoveNext () [0x0003a] in .\Library\PackageCache\com.unity.test-framework@0b7a23ab2e1d\UnityEngine.TestRunner\NUnitExtensions\Attributes\TestEnumerator.cs:44
+</stack-trace>
+                  </failure>
+                </test-case>
+              </test-suite>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

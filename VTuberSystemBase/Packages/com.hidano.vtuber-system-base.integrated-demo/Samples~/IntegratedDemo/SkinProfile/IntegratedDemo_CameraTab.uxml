@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  IntegratedDemo Camera Tab UXML.
+  CameraSwitcherTab.View.ViewQueryHelpers の RequireByName で
+  解決される region 名をすべて含む。
+-->
+<UXML xmlns="UnityEngine.UIElements"
+      xmlns:engine="UnityEngine.UIElements"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <VisualElement name="vsb-cam-tab" class="vsb-tab-root vsb-tab-root--camera-switcher vsb-cam-tab" style="flex-grow: 1;">
+        <VisualElement name="vsb-cam-tab__preview-active" class="vsb-cam-tab__preview-active" />
+        <VisualElement name="vsb-cam-tab__preview-multi"  class="vsb-cam-tab__preview-multi" />
+        <VisualElement name="vsb-cam-tab__camera-list"    class="vsb-cam-tab__camera-list" />
+        <VisualElement name="vsb-cam-tab__volume-editor"  class="vsb-cam-tab__volume-editor" style="flex-grow: 1;" />
+        <VisualElement name="vsb-cam-tab__preset-panel"   class="vsb-cam-tab__preset-panel" />
+        <VisualElement name="vsb-cam-tab__diagnostics"    class="vsb-cam-tab__diagnostics" />
+    </VisualElement>
+</UXML>

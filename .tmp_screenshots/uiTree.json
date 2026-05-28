@@ -1,0 +1,10 @@
+﻿node.exe : error: too many arguments for 'execute-dynamic-code'. Expected 0 arguments but got 17.
+At C:\Users\Hidano\AppData\Roaming\npm\uloop.ps1:24 char:5
++     & "node$exe"  "$basedir/node_modules/uloop-cli/dist/cli.bundle.cj ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (error: too many...nts but got 17.:String) [], RemoteExc 
+   eption
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(run with -h for available options)
+

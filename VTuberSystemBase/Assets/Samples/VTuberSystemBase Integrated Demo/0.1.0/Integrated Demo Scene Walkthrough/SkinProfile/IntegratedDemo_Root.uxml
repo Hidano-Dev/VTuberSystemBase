@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  IntegratedDemo Root UXML.
+  Sample 版: ui-toolkit-shell が要求する 3 領域 (tab bar / tab content / notification bar) を
+  最小構成で提供する。必要であれば Import 後に自由に書き換えてよい。
+
+  必須要素 (SkinValidationRules.Root):
+    vsb-shell-root       : ルート (UIDocument visualTreeAsset)
+    vsb-tab-bar          : タブバー (TabBarController がボタンを Q する)
+    vsb-tab-bar__button  : 各タブのボタン (modifier 'character', 'stage-lighting', 'camera-switcher')
+    vsb-tab-content      : 3 タブの UIDocument がぶら下がるホスト領域
+    vsb-notification-bar : NotificationBarController の描画先
+-->
+<UXML xmlns="UnityEngine.UIElements"
+      xmlns:engine="UnityEngine.UIElements"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <VisualElement name="vsb-shell-root" class="vsb-shell-root" style="flex-grow: 1;">
+        <VisualElement name="vsb-tab-bar" class="vsb-tab-bar">
+            <Button name="vsb-tab-bar__button--character"
+                    class="vsb-tab-bar__button"
+                    text="Character" />
+            <Button name="vsb-tab-bar__button--stage-lighting"
+                    class="vsb-tab-bar__button"
+                    text="Stage" />
+            <Button name="vsb-tab-bar__button--camera-switcher"
+                    class="vsb-tab-bar__button"
+                    text="Camera" />
+        </VisualElement>
+        <VisualElement name="vsb-tab-content" class="vsb-tab-content" style="flex-grow: 1;" />
+        <VisualElement name="vsb-notification-bar" class="vsb-notification-bar" />
+    </VisualElement>
+</UXML>

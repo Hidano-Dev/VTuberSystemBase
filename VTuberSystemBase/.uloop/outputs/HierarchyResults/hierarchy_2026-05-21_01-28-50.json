@@ -1,0 +1,219 @@
+{
+  "ExportTimestamp": "2026-05-21 01:28:50",
+  "Context": {
+    "sceneType": "runtime",
+    "sceneName": "Multiple(2): MainDemo, DontDestroyOnLoad",
+    "nodeCount": 14,
+    "maxDepth": 1
+  },
+  "Hierarchy": [
+    {
+      "sceneName": "MainDemo",
+      "stats": {
+        "rootCount": 6,
+        "nodeCount": 12,
+        "maxDepth": 1
+      },
+      "roots": [
+        {
+          "name": "IntegratedDemoRoot",
+          "isActive": true,
+          "components": [
+            "Transform",
+            "OutputSceneBootstrapper",
+            "IntegratedDemoBootstrap",
+            "CoreIpcBusProvider",
+            "StageLightingVolumeOutputAdapterBootstrapper"
+          ],
+          "siblingIndex": 0,
+          "tag": "Untagged",
+          "layer": 0,
+          "path": "IntegratedDemoRoot",
+          "children": [
+            {
+              "name": "RacMainOutputAdapterHost",
+              "isActive": true,
+              "components": [
+                "Transform",
+                "RacMainOutputAdapterHost"
+              ],
+              "siblingIndex": 0,
+              "tag": "Untagged",
+              "layer": 0,
+              "path": "IntegratedDemoRoot/RacMainOutputAdapterHost",
+              "children": []
+            },
+            {
+              "name": "CameraSwitcherOutputAdapterHost",
+              "isActive": true,
+              "components": [
+                "Transform",
+                "CameraSwitcherOutputAdapterBootstrapper"
+              ],
+              "siblingIndex": 1,
+              "tag": "Untagged",
+              "layer": 0,
+              "path": "IntegratedDemoRoot/CameraSwitcherOutputAdapterHost",
+              "children": []
+            }
+          ]
+        },
+        {
+          "name": "StageRoot",
+          "isActive": true,
+          "components": [
+            "Transform"
+          ],
+          "siblingIndex": 1,
+          "tag": "Untagged",
+          "layer": 0,
+          "path": "StageRoot",
+          "children": []
+        },
+        {
+          "name": "CharactersRoot",
+          "isActive": true,
+          "components": [
+            "Transform"
+          ],
+          "siblingIndex": 2,
+          "tag": "Untagged",
+          "layer": 0,
+          "path": "CharactersRoot",
+          "children": []
+        },
+        {
+          "name": "LightsRoot",
+          "isActive": true,
+          "components": [
+            "Transform"
+          ],
+          "siblingIndex": 3,
+          "tag": "Untagged",
+          "layer": 0,
+          "path": "LightsRoot",
+          "children": [
+            {
+              "name": "DefaultDirectionalLight",
+              "isActive": true,
+              "components": [
+                "Transform",
+                "Light"
+              ],
+              "siblingIndex": 0,
+              "tag": "Untagged",
+              "layer": 0,
+              "path": "LightsRoot/DefaultDirectionalLight",
+              "children": []
+            }
+          ]
+        },
+        {
+          "name": "CamerasRoot",
+          "isActive": true,
+          "components": [
+            "Transform"
+          ],
+          "siblingIndex": 4,
+          "tag": "Untagged",
+          "layer": 0,
+          "path": "CamerasRoot",
+          "children": [
+            {
+              "name": "DefaultMainOutputCamera",
+              "isActive": true,
+              "components": [
+                "Transform",
+                "Camera",
+                "UniversalAdditionalCameraData"
+              ],
+              "siblingIndex": 0,
+              "tag": "Untagged",
+              "layer": 0,
+              "path": "CamerasRoot/DefaultMainOutputCamera",
+              "children": []
+            },
+            {
+              "name": "PreviewCamera",
+              "isActive": true,
+              "components": [
+                "Transform",
+                "Camera",
+                "UniversalAdditionalCameraData",
+                "SceneViewStyleCameraController",
+                "StagePreviewHost"
+              ],
+              "siblingIndex": 1,
+              "tag": "Untagged",
+              "layer": 0,
+              "path": "CamerasRoot/PreviewCamera",
+              "children": []
+            }
+          ]
+        },
+        {
+          "name": "VolumeRoot",
+          "isActive": true,
+          "components": [
+            "Transform"
+          ],
+          "siblingIndex": 5,
+          "tag": "Untagged",
+          "layer": 0,
+          "path": "VolumeRoot",
+          "children": [
+            {
+              "name": "DefaultGlobalVolume",
+              "isActive": true,
+              "components": [
+                "Transform",
+                "Volume"
+              ],
+              "siblingIndex": 0,
+              "tag": "Untagged",
+              "layer": 0,
+              "path": "VolumeRoot/DefaultGlobalVolume",
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sceneName": "DontDestroyOnLoad",
+      "stats": {
+        "rootCount": 2,
+        "nodeCount": 2,
+        "maxDepth": 0
+      },
+      "roots": [
+        {
+          "name": "[Debug Updater]",
+          "isActive": true,
+          "components": [
+            "Transform",
+            "DebugUpdater"
+          ],
+          "siblingIndex": 0,
+          "tag": "Untagged",
+          "layer": 0,
+          "path": "[Debug Updater]",
+          "children": []
+        },
+        {
+          "name": "MainThreadDispatcher",
+          "isActive": true,
+          "components": [
+            "Transform",
+            "MainThreadDispatcher"
+          ],
+          "siblingIndex": 1,
+          "tag": "Untagged",
+          "layer": 0,
+          "path": "MainThreadDispatcher",
+          "children": []
+        }
+      ]
+    }
+  ]
+}
