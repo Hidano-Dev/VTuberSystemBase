@@ -45,6 +45,16 @@ namespace VtsApiDebug
             new DebugAction("G/J. IPC", "Runtime Status", UiApiDebugHub.RuntimeStatus),
             new DebugAction("G/J. IPC", "Connection Status", UiApiDebugHub.ConnectionStatus),
 
+            new DebugAction("Inspect (read-only)", "Dump All Diagnostics", UiApiDebugHub.DumpAllDiagnostics),
+            new DebugAction("Inspect (read-only)", "B/C. Shell Config", UiApiDebugHub.DumpShellConfig),
+            new DebugAction("Inspect (read-only)", "C. Skin Validation", UiApiDebugHub.DumpSkinValidation),
+            new DebugAction("Inspect (read-only)", "D/E. Tab States", UiApiDebugHub.DumpTabStates),
+            new DebugAction("Inspect (read-only)", "F. Asset Loader", UiApiDebugHub.DumpAssetLoader),
+            new DebugAction("Inspect (read-only)", "H. Connection", UiApiDebugHub.DumpConnection),
+            new DebugAction("Inspect (read-only)", "K. Output Scene", UiApiDebugHub.DumpOutputScene),
+            new DebugAction("Inspect (read-only)", "L. RAC Adapter", UiApiDebugHub.DumpRacAdapter),
+            new DebugAction("Inspect (read-only)", "L. Stage Adapter", UiApiDebugHub.DumpStageAdapter),
+
             new DebugAction("O. Camera", "Add Perspective Camera", UiApiDebugHub.AddPerspectiveCamera),
             new DebugAction("O. Camera", "Add Orthographic Camera", UiApiDebugHub.AddOrthographicCamera),
             new DebugAction("O. Camera", "Activate Last Camera", UiApiDebugHub.ActivateLastCamera),
