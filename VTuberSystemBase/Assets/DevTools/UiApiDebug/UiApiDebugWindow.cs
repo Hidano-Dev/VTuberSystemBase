@@ -55,6 +55,16 @@ namespace VtsApiDebug
             new DebugAction("Inspect (read-only)", "L. RAC Adapter", UiApiDebugHub.DumpRacAdapter),
             new DebugAction("Inspect (read-only)", "L. Stage Adapter", UiApiDebugHub.DumpStageAdapter),
 
+            new DebugAction("N. Stage", "Subscribe Stage", UiApiDebugHub.SubscribeStage),
+            new DebugAction("N. Stage", "Add Directional Light", UiApiDebugHub.AddDirectionalLight),
+            new DebugAction("N. Stage", "Add Point Light", UiApiDebugHub.AddPointLight),
+            new DebugAction("N. Stage", "Add Spot Light", UiApiDebugHub.AddSpotLight),
+            new DebugAction("N. Stage", "Set Last Intensity High", UiApiDebugHub.SetLastLightIntensityHigh),
+            new DebugAction("N. Stage", "Set Last Color Red", UiApiDebugHub.SetLastLightColorRed),
+            new DebugAction("N. Stage", "Remove Last Light", UiApiDebugHub.RemoveLastLight),
+            new DebugAction("N. Stage", "Unload Stage", UiApiDebugHub.UnloadStage),
+            new DebugAction("N. Stage", "Dump Stage State (UI)", UiApiDebugHub.DumpStageState),
+
             new DebugAction("O. Camera", "Add Perspective Camera", UiApiDebugHub.AddPerspectiveCamera),
             new DebugAction("O. Camera", "Add Orthographic Camera", UiApiDebugHub.AddOrthographicCamera),
             new DebugAction("O. Camera", "Activate Last Camera", UiApiDebugHub.ActivateLastCamera),
