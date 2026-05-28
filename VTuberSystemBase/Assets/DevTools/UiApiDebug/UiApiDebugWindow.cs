@@ -55,6 +55,14 @@ namespace VtsApiDebug
             new DebugAction("Inspect (read-only)", "L. RAC Adapter", UiApiDebugHub.DumpRacAdapter),
             new DebugAction("Inspect (read-only)", "L. Stage Adapter", UiApiDebugHub.DumpStageAdapter),
 
+            new DebugAction("M. Character", "Subscribe Character", UiApiDebugHub.SubscribeCharacter),
+            new DebugAction("M. Character", "Assign Bogus -> Slot0", UiApiDebugHub.AssignBogusToFirstSlot),
+            new DebugAction("M. Character", "Assign 1st Avatar -> Slot0", UiApiDebugHub.AssignFirstAvatarToFirstSlot),
+            new DebugAction("M. Character", "Reset Slot0", UiApiDebugHub.ResetFirstSlot),
+            new DebugAction("M. Character", "Clear Slot0", UiApiDebugHub.ClearFirstSlot),
+            new DebugAction("M. Character", "Probe Slot Send", UiApiDebugHub.ProbeSlotSend),
+            new DebugAction("M. Character", "Dump Character State (UI)", UiApiDebugHub.DumpCharacterState),
+
             new DebugAction("N. Stage", "Subscribe Stage", UiApiDebugHub.SubscribeStage),
             new DebugAction("N. Stage", "Add Directional Light", UiApiDebugHub.AddDirectionalLight),
             new DebugAction("N. Stage", "Add Point Light", UiApiDebugHub.AddPointLight),
