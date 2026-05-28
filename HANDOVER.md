@@ -7,7 +7,8 @@ VtsApiDebug（UI/IPC API 逐次実行・画面検証ツール）の **Phase5 OSC
 - **出力アダプタへ OSC 受信カウンタ診断を追加**（commit `10b346c`, production 変更）: `CameraSwitcherOutputAdapter`（Domain）に `OscFramesReceived`/`OscFramesApplied`/`LastAppliedCameraId`/`LastAppliedAtUnixMs` と、設定上の受信先 `OscReceiveHost`/`OscReceivePort` を public 露出。`OnOscMessageReceived`（Unity main thread）でカウント、`_applier.Apply` が true のときのみ applied++。`CameraSwitcherOutputAdapterDiagnostics.Snapshot` に同フィールドを追加。**これが無いと UDP の偽成功（ポート不一致でも Send OK）を見抜けない** ＝ 前セッションが OSC を見送った根本理由を解消。
 - **Phase5 OSC 送信（§O-8）**（commit `50e3119`, Editor ツール）: `UiApiDebugHub.Osc.cs` 新規。UI 側 `UoscFlatRecordEmitter` + `Ucapi4UnityFlatRecordSerializer` を直接駆動し `/ucapi/camera/{id}/flat` へ UCAPI blob を UDP 送信。**emitter の送信先は推測せず `DumpCameraAdapter` が露出する実際の受信 host/port に必ず一致させる**（`EnsureOscEmitterStarted` が診断 snapshot から読む）。`DumpCameraAdapter` を新カウンタ表示に更新。Window に「O-8. OSC」グループ（Start/Send→Last/Stop）追加。asmdef に `VTuberSystemBase.CameraSwitcherTab.Runtime` 参照追加（uOSC + UCAPI4Unity DLL を間接導入）。
 - compile 0err/0warn。**camera-switcher-output-adapter PlayMode テスト 96/96 合格**（production 変更の非回帰確認）。
-- 計 2 コミット（main: `10b346c` / `50e3119`）。
+- **おまけ: Stage 診断 handler count のリーク表示を修正**（commit `4bce442`, production）: 前セッションが「per-property ハンドラが RemoveLight で deregister されない疑い」とした件を調査 → **実ハンドラのリークは無く（`HandleRemove` で確実に Dispose 済み）、診断カウンタ `RegisteredHandlerCount` が remove/dispose で減算されないだけの「診断精度バグ」**と判明。`LightHandler` が増やした分を `_ownedHandlerCount` で追跡し remove/dispose で正確に戻す（カウンタは stage/volume/preview と共有のため 0 リセット不可）。テストに整合性アサート追加。
+- 計 4 コミット（main: `10b346c` / `50e3119` / `154d739` HANDOVER / `4bce442` Stage 修正）。
 
 ## ◯ 検証結果（往復確認＝偽成功ではない）
 
@@ -16,6 +17,8 @@ MainDemo・PlayMode で:
 2. `SendOscToLastCameraDemo`（送信成功表示）→ `DumpCameraAdapter`: `OscFramesReceived=1, OscFramesApplied=1, LastApplied=cam-0001`。
 3. もう一度送信 → `2 / 2`（決定性確認。1 送信 = +1 受信 +1 適用）。
 → UDP が**実際に 127.0.0.1:9000 へ到達し、アドレス `/ucapi/camera/cam-0001/flat` を decode → cam-0001 へ route → UCAPI で apply 成功**。送信 OK 表示だけでなく出力側カウンタの読み戻しで往復を確認した。
+
+Stage 診断修正の検証: MainDemo・PlayMode で `DumpStageAdapter` の `Handlers` が AddDirectionalLight で 3→10、RemoveLastLight で 10→3 に戻る（修正前は 10 のまま）。EditMode（PlayMode 実行）テスト 102/102 合格（新アサート含む）。
 
 ## ◯ 決定事項
 
@@ -38,11 +41,11 @@ MainDemo・PlayMode で:
 
 ## ◯ 次にやること（P2 申し送り、優先度順）
 
-1. **Stage の per-property ハンドラ deregister 漏れ**（軽微・未確認）: AddLight で dispatcher handler が 3→10 に増えるが RemoveLight 後も 10 のまま、の疑い。camera 側は `CameraSwitcherOutputAdapter.UnregisterPerCameraHandlers`（delete 時に呼ぶ）が正しい参照実装。Stage 側（stage-lighting-volume-output-adapter）に同等の解除があるか要確認。検証は `DumpStageAdapter` の handler count を AddLight→RemoveLight で見る。
-2. **`ConnectionStatus` ファサードの latched 状態取りこぼし**（接続バッジ永久 Initializing バグ）: `ui-toolkit-shell/Runtime/Commands/ConnectionStatus.cs` が購読時点の latched 接続状態を再生せず初期 Connected 遷移を取りこぼす。`DumpConnection` が実通信中でも `IsConnected=False/Initializing` を返す。**UI 再設計時に対応予定**（前セッション判断）。
-3. **request/response の responseSink 結線**（avatar/volume schema 取得の往復復活）: OutputScene が Dispatcher を `responseSink:null` で生成しているため request が往復しない。event/state は通る。
-4. 既存テスト失敗 `CoreIpcRuntimeHostTests.Initialize_TransitionsThroughInitializingToRunning`（本作業と無関係＝既存）。
-5. **Addressables 未ビルド**で avatar/stage の可視検証素材が無い（catalog 空）。MainDemo は MoCap スロット 0 個で Character 往復は依然未観測（前セッションからの継続）。
+1. **`ConnectionStatus` ファサードの latched 状態取りこぼし**（接続バッジ永久 Initializing バグ）: `ui-toolkit-shell/Runtime/Commands/ConnectionStatus.cs` が購読時点の latched 接続状態を再生せず初期 Connected 遷移を取りこぼす。`DumpConnection` が実通信中でも `IsConnected=False/Initializing` を返す。**UI 再設計時に対応予定**（前セッション判断）。
+2. **request/response の responseSink 結線**（avatar/volume schema 取得の往復復活）: OutputScene が Dispatcher を `responseSink:null` で生成しているため request が往復しない。event/state は通る。
+3. 既存テスト失敗 `CoreIpcRuntimeHostTests.Initialize_TransitionsThroughInitializingToRunning`（本作業と無関係＝既存）。
+4. **Addressables 未ビルド**で avatar/stage の可視検証素材が無い（catalog 空）。MainDemo は MoCap スロット 0 個で Character 往復は依然未観測（前セッションからの継続）。
+5. **stage/volume/preview ハンドラの diagnostics 減算は未確認**: 今回 LightHandler のみ修正。`VolumeOverrideHandler`/`StageHandler`/`PreviewCommandHandler` も `IncrementHandlerCount` で増やすが、それぞれの teardown で同様に減算しているかは未調査（同型の診断精度バグが残っている可能性、軽微）。
 
 ## ◯ 関連ファイル
 
@@ -53,6 +56,8 @@ MainDemo・PlayMode で:
 - `VTuberSystemBase/Assets/DevTools/UiApiDebug/UiApiDebugHub.Camera.cs`（DumpCameraAdapter 更新）
 - `VTuberSystemBase/Assets/DevTools/UiApiDebug/UiApiDebugWindow.cs`（O-8 グループ登録）
 - `VTuberSystemBase/Assets/DevTools/UiApiDebug/VtsApiDebug.asmdef`（CameraSwitcherTab.Runtime 参照追加）
+- `VTuberSystemBase/Packages/com.hidano.vtuber-system-base.stage-lighting-volume-output-adapter/Runtime/Lights/LightHandler.cs`（診断 handler count 減算修正, production）
+- `VTuberSystemBase/Packages/com.hidano.vtuber-system-base.stage-lighting-volume-output-adapter/Tests/Editor/LightHandlerTests.cs`（整合性アサート追加）
 
 ### 再利用した送信部品（変更なし）
 - `camera-switcher-tab/Runtime/Adapters/Osc/UoscFlatRecordEmitter.cs`
