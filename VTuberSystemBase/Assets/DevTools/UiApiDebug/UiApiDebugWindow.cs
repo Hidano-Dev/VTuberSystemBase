@@ -83,6 +83,10 @@ namespace VtsApiDebug
             new DebugAction("O. Camera", "Add Bloom (last cam)", UiApiDebugHub.AddBloomToLastCamera),
             new DebugAction("O. Camera", "Enable Volume (last cam)", UiApiDebugHub.EnableVolumeOnLastCamera),
             new DebugAction("O. Camera", "Dump Camera Adapter", UiApiDebugHub.DumpCameraAdapter),
+
+            new DebugAction("O-8. OSC", "Start OSC Emitter", UiApiDebugHub.StartOscEmitter),
+            new DebugAction("O-8. OSC", "Send OSC -> Last Camera", UiApiDebugHub.SendOscToLastCameraDemo),
+            new DebugAction("O-8. OSC", "Stop OSC Emitter", UiApiDebugHub.StopOscEmitter),
         };
 
         private Vector2 _buttonScroll;

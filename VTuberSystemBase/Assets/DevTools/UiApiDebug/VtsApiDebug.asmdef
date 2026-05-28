@@ -8,6 +8,7 @@
         "VTuberSystemBase.CharacterSelectionTab.Contracts",
         "VTuberSystemBase.StageLightingVolumeTab.Contracts",
         "VTuberSystemBase.CameraSwitcherTab.Contracts",
+        "VTuberSystemBase.CameraSwitcherTab.Runtime",
         "VTuberSystemBase.RacMainOutputAdapter.Runtime",
         "VTuberSystemBase.StageLightingVolumeOutputAdapter.Runtime",
         "VTuberSystemBase.CameraSwitcherOutputAdapter.Runtime",

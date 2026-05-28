@@ -176,7 +176,9 @@ namespace VtsApiDebug
             var s = snap.Value;
             return Report("DumpCameraAdapter", true,
                 $"Status={s.AdapterStatus}, CameraCount={s.CameraCount}, Active={s.ActiveCameraId ?? "<none>"}, " +
-                $"Cameras=[{string.Join(",", s.Cameras)}], Osc={s.OscReceiverStatus}, IpcHandlers={s.IpcStaticHandlerCount}");
+                $"Cameras=[{string.Join(",", s.Cameras)}], Osc={s.OscReceiverStatus}@{s.OscReceiveHost}:{s.OscReceivePort}, " +
+                $"OscFramesReceived={s.OscFramesReceived}, OscFramesApplied={s.OscFramesApplied}, " +
+                $"LastApplied={s.LastAppliedCameraId ?? "<none>"}, IpcHandlers={s.IpcStaticHandlerCount}");
         }
 
         // ===== 無引数の便利メソッド（uloop からの quote-free 実行用） =====
