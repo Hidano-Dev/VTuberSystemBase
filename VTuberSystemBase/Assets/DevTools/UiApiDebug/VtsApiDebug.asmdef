@@ -1,0 +1,30 @@
+{
+    "name": "VtsApiDebug",
+    "rootNamespace": "VtsApiDebug",
+    "references": [
+        "UiToolkitShell.Runtime",
+        "VTuberSystemBase.CoreIpc.Abstractions",
+        "VTuberSystemBase.CoreIpc.Core",
+        "VTuberSystemBase.CharacterSelectionTab.Contracts",
+        "VTuberSystemBase.StageLightingVolumeTab.Contracts",
+        "VTuberSystemBase.CameraSwitcherTab.Contracts",
+        "VTuberSystemBase.RacMainOutputAdapter.Runtime",
+        "VTuberSystemBase.StageLightingVolumeOutputAdapter.Runtime",
+        "VTuberSystemBase.CameraSwitcherOutputAdapter.Runtime",
+        "VTuberSystemBase.CameraSwitcherOutputAdapter.Domain",
+        "VTuberSystemBase.CameraSwitcherOutputAdapter.Abstractions",
+        "VTuberSystemBase.OutputRendererShell.Runtime",
+        "VTuberSystemBase.IntegratedDemo.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
