@@ -52,6 +52,17 @@ namespace VTuberSystemBase.CameraSwitcherOutputAdapter.Domain
         private bool _disposed;
         private int _allocOrderCounter;
 
+        // OSC receive diagnostics. Incremented on the Unity main thread inside
+        // OnOscMessageReceived, so non-atomic ++ is sufficient. These exist so
+        // an external tool can distinguish a genuine round-trip from a UDP "false
+        // success" (a Send that returns OK while the packet never arrived because of a
+        // port mismatch): if OscFramesReceived stays 0 while the receiver is Running,
+        // nothing actually arrived.
+        private long _oscFramesReceived;
+        private long _oscFramesApplied;
+        private string? _lastAppliedCameraId;
+        private long _lastAppliedAtUnixMs;
+
         public CameraSwitcherOutputAdapter(
             IOutputCommandDispatcher dispatcher,
             IOutputSceneRoots sceneRoots,
@@ -91,6 +102,19 @@ namespace VTuberSystemBase.CameraSwitcherOutputAdapter.Domain
         public FailureAggregator Failures => _failures;
         public CameraEntryRegistry Registry => _registry;
 
+        /// <summary>OSC frames that reached the adapter (address + blob already decoded).</summary>
+        public long OscFramesReceived => _oscFramesReceived;
+        /// <summary>OSC frames successfully applied to a registered camera.</summary>
+        public long OscFramesApplied => _oscFramesApplied;
+        /// <summary>CameraId of the most recently applied OSC frame, or null.</summary>
+        public string? LastAppliedCameraId => _lastAppliedCameraId;
+        /// <summary>Unix-ms timestamp of the most recently applied OSC frame, or 0.</summary>
+        public long LastAppliedAtUnixMs => _lastAppliedAtUnixMs;
+        /// <summary>Configured OSC receive host (what an emitter must target).</summary>
+        public string OscReceiveHost => _config.OscHost;
+        /// <summary>Configured OSC receive port (what an emitter must target).</summary>
+        public int OscReceivePort => _config.OscPort;
+
         public async Task InitializeAsync(CancellationToken ct = default)
         {
             ct.ThrowIfCancellationRequested();
@@ -121,10 +145,16 @@ namespace VTuberSystemBase.CameraSwitcherOutputAdapter.Domain
         public void OnOscMessageReceived(OscReceivedMessage message)
         {
             if (_disposed) return;
+            _oscFramesReceived++;
             _router.Route(in message, (entry, blob) =>
             {
                 if (entry.CameraComponent == null) return;
-                _applier.Apply(entry.CameraId, blob, entry.CameraComponent);
+                if (_applier.Apply(entry.CameraId, blob, entry.CameraComponent))
+                {
+                    _oscFramesApplied++;
+                    _lastAppliedCameraId = entry.CameraId.Value;
+                    _lastAppliedAtUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                }
             });
         }
 

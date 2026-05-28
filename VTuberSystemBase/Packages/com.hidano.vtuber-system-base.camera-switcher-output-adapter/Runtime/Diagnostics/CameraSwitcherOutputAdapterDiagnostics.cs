@@ -44,6 +44,12 @@ namespace VTuberSystemBase.CameraSwitcherOutputAdapter.Runtime.Diagnostics
                 OscReceiverStatus = _oscHost.Status,
                 IpcStaticHandlerCount = _registration.RegisteredHandlerCount,
                 Failures = failureSnapshot,
+                OscReceiveHost = _adapter.OscReceiveHost,
+                OscReceivePort = _adapter.OscReceivePort,
+                OscFramesReceived = _adapter.OscFramesReceived,
+                OscFramesApplied = _adapter.OscFramesApplied,
+                LastAppliedCameraId = _adapter.LastAppliedCameraId,
+                LastAppliedAtUnixMs = _adapter.LastAppliedAtUnixMs,
             };
         }
 
@@ -56,6 +62,19 @@ namespace VTuberSystemBase.CameraSwitcherOutputAdapter.Runtime.Diagnostics
             public OscReceiverHostStatus OscReceiverStatus { get; init; }
             public int IpcStaticHandlerCount { get; init; }
             public FailureAggregator.Snapshot Failures { get; init; }
+
+            /// <summary>Configured OSC receive host (target an emitter at this).</summary>
+            public string OscReceiveHost { get; init; }
+            /// <summary>Configured OSC receive port (target an emitter at this).</summary>
+            public int OscReceivePort { get; init; }
+            /// <summary>OSC frames that reached the adapter since start.</summary>
+            public long OscFramesReceived { get; init; }
+            /// <summary>OSC frames successfully applied to a camera since start.</summary>
+            public long OscFramesApplied { get; init; }
+            /// <summary>CameraId of the most recently applied OSC frame, or null.</summary>
+            public string? LastAppliedCameraId { get; init; }
+            /// <summary>Unix-ms timestamp of the most recently applied OSC frame, or 0.</summary>
+            public long LastAppliedAtUnixMs { get; init; }
         }
     }
 }
