@@ -59,6 +59,14 @@ namespace VTuberSystemBase.OutputRendererShell.Dispatch
         /// <inheritdoc />
         public int RegisteredHandlerCount => _registry.Count;
 
+        /// <summary>
+        /// True when at least one handler (any kind) is registered for <paramref name="topic"/>.
+        /// A same-process bus→dispatcher bridge uses this to forward only envelopes this
+        /// dispatcher can handle, avoiding "no handler" warnings for unrelated traffic.
+        /// </summary>
+        public bool HasHandlerFor(string topic)
+            => !string.IsNullOrEmpty(topic) && _registry.HasAnyForTopic(topic);
+
         /// <inheritdoc />
         public OutputCommandHandlerRegistration RegisterStateHandler<TPayload>(string topic, Action<StateCommand<TPayload>> handler)
         {

@@ -116,16 +116,85 @@ namespace VTuberSystemBase.CoreIpc.Core.Dispatch
             for (int i = 0; i < stateBatch.Count; i++)
             {
                 DispatchTo(lookup, stateBatch[i]);
+                NotifyInboundObservers(stateBatch[i]);
             }
 
             for (int i = 0; i < eventBatch.Count; i++)
             {
                 DispatchTo(lookup, eventBatch[i]);
+                NotifyInboundObservers(eventBatch[i]);
             }
 
             for (int i = 0; i < requestBatch.Count; i++)
             {
                 DispatchTo(lookup, requestBatch[i]);
+                NotifyInboundObservers(requestBatch[i]);
+            }
+        }
+
+        // ----- Raw inbound observers ---------------------------------------
+        // Observers receive every inbound non-Response envelope after the typed
+        // topic handlers run, on the Unity main thread. Used to bridge the bus to
+        // an OutputCommandDispatcher in same-process composition roots.
+        private readonly object _observerSync = new();
+        private readonly List<Action<MessageEnvelope>> _inboundObservers = new();
+
+        public IDisposable AddInboundObserver(Action<MessageEnvelope> observer)
+        {
+            if (observer is null) throw new ArgumentNullException(nameof(observer));
+            lock (_observerSync)
+            {
+                _inboundObservers.Add(observer);
+            }
+            return new ObserverToken(this, observer);
+        }
+
+        private void RemoveInboundObserver(Action<MessageEnvelope> observer)
+        {
+            lock (_observerSync)
+            {
+                _inboundObservers.Remove(observer);
+            }
+        }
+
+        private void NotifyInboundObservers(MessageEnvelope envelope)
+        {
+            Action<MessageEnvelope>[] snapshot;
+            lock (_observerSync)
+            {
+                if (_inboundObservers.Count == 0) return;
+                snapshot = _inboundObservers.ToArray();
+            }
+
+            for (int i = 0; i < snapshot.Length; i++)
+            {
+                try
+                {
+                    snapshot[i](envelope);
+                }
+                catch (Exception ex)
+                {
+                    _logError?.Invoke(
+                        "Inbound observer threw for topic '" + envelope.Topic + "'.", ex);
+                }
+            }
+        }
+
+        private sealed class ObserverToken : IDisposable
+        {
+            private MainThreadDispatchQueue? _owner;
+            private readonly Action<MessageEnvelope> _observer;
+
+            public ObserverToken(MainThreadDispatchQueue owner, Action<MessageEnvelope> observer)
+            {
+                _owner = owner;
+                _observer = observer;
+            }
+
+            public void Dispose()
+            {
+                _owner?.RemoveInboundObserver(_observer);
+                _owner = null;
             }
         }
 

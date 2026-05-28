@@ -88,6 +88,25 @@ namespace VTuberSystemBase.CoreIpc.Core
             }
         }
 
+        /// <summary>
+        /// Registers an observer that receives every inbound non-Response envelope after the
+        /// typed topic handlers run, on the Unity main thread. Same-process composition roots
+        /// use this to bridge the bus to an <c>OutputCommandDispatcher</c> (whose inbound entry
+        /// point <c>OnEnvelopeReceived</c> is not otherwise wired to the bus). Dispose the
+        /// returned token to stop observing.
+        /// </summary>
+        public IDisposable SubscribeAllInbound(Action<MessageEnvelope> observer)
+        {
+            if (observer is null) throw new ArgumentNullException(nameof(observer));
+            var queue = Volatile.Read(ref _dispatchQueue);
+            if (queue is null)
+            {
+                throw new InvalidOperationException(
+                    "CoreIpcRuntime.SubscribeAllInbound is unavailable; runtime has not been initialized.");
+            }
+            return queue.AddInboundObserver(observer);
+        }
+
         public async Task InitializeAsync(CoreIpcOptions options, CancellationToken cancellationToken = default)
         {
             if (options is null) throw new ArgumentNullException(nameof(options));

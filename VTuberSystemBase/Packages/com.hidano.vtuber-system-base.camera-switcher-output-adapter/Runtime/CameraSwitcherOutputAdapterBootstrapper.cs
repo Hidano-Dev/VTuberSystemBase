@@ -90,8 +90,13 @@ namespace VTuberSystemBase.CameraSwitcherOutputAdapter.Runtime
                     dispatcher, sceneRoots, allocator, _oscHost, volumeBinder, schemaResolver,
                     factory, bus!, new SystemUtcClock(), _config);
 
+                // The static IPC handlers (camera/command, camera/preview/command,
+                // camera/preset/command) are registered by _adapter.InitializeAsync() below.
+                // Do NOT also call _ipcRegistration.RegisterAll(...) here: the dispatcher rejects
+                // duplicate (topic, kind) registrations (HandlerRegistry throws), and because
+                // InitializeAsync runs fire-and-forget the duplicate would silently fault the
+                // init before OSC startup, leaving Status stuck at Initializing and OSC stopped.
                 _ipcRegistration = new IpcHandlerRegistration();
-                _ipcRegistration.RegisterAll(dispatcher, _adapter);
                 _diagnostics = new CameraSwitcherOutputAdapterDiagnostics(_adapter, _oscHost, _ipcRegistration);
 
                 _ = _adapter.InitializeAsync();

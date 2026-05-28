@@ -4,6 +4,9 @@ using System.Collections;
 using UnityEngine;
 using VTuberSystemBase.CoreIpc.Abstractions;
 using VTuberSystemBase.CoreIpc.Core;
+using VTuberSystemBase.CoreIpc.Core.Configuration;
+using VTuberSystemBase.CoreIpc.Core.Lifecycle;
+using VTuberSystemBase.OutputRendererShell.Dispatch;
 using VTuberSystemBase.OutputRendererShell.Scene;
 using VTuberSystemBase.RacMainOutputAdapter.Bootstrapper;
 using VTuberSystemBase.CameraSwitcherOutputAdapter.Runtime;
@@ -53,6 +56,7 @@ namespace VTuberSystemBase.IntegratedDemo
         private RacMainOutputAdapterHost? _racHost;
         private StageLightingVolumeOutputAdapterBootstrapper? _stageHost;
         private CameraSwitcherOutputAdapterBootstrapper? _cameraHost;
+        private IDisposable? _inboundBridge;
         private bool _initialized;
 
         public IntegratedDemoConfig Config => _config;
@@ -70,10 +74,16 @@ namespace VTuberSystemBase.IntegratedDemo
 
             try
             {
+                // VTuber 配信用システムは Editor フォーカスが外れていても動き続ける必要があるため強制 ON。
+                // これが false だと PlayMode の Update がフォアグラウンド時しか進まず、UI shell 起動も Bus 解決も止まる。
+                Application.runInBackground = true;
+
+                EnsureRuntimeBootstrapped();
                 EnsureBusProvider();
                 EnsureOutputSceneBootstrapper();
                 EnsureMainOutputAdapters();
-                EnsureUiShell();
+                // UI shell / RAC / Camera は CoreIpcRuntime.Current.Bus が available になるまで待つ必要があるため、
+                // StartAdaptersAfterOutputReady() からまとめて起動する。
                 Debug.Log("[IntegratedDemoBootstrap] Awake wiring complete (PlayMode integration scaffold ready).");
             }
             catch (Exception ex)
@@ -92,8 +102,9 @@ namespace VTuberSystemBase.IntegratedDemo
 
         private IEnumerator StartAdaptersAfterOutputReady()
         {
-            // Wait until OutputSceneBootstrapper reports Complete (or maxFrames timeout).
             int maxFrames = Mathf.Max(1, _config.AdapterStartupMaxFrames);
+
+            // 1) OutputSceneBootstrapper が Complete に達するまで待つ。
             for (int frame = 0; frame < maxFrames; frame++)
             {
                 if (_outputSceneBootstrapper != null
@@ -106,9 +117,34 @@ namespace VTuberSystemBase.IntegratedDemo
                 yield return null;
             }
 
-            // RAC Host が同期的に Start で起動するので、自前 Coroutine からは TryStart 系のあるアダプタのみ起動する。
-            // Stage adapter は MonoBehaviour.Start で auto-start するが、Dispatcher 未初期化時は no-op で抜ける作りなので
-            // ここで明示的に再起動して "complete" 状態の Dispatcher / Roots に対する解決を確実にする。
+            // 2) CoreIpcRuntime.Current.Bus が available になるまで待つ。
+            //    RuntimeBootstrap.OnBeforeSceneLoad が CoreIpcRuntimeHost.InitializeAsync() を発火するが、
+            //    WebSocket Server.StartServerAsync の完了を待つ非同期処理なので Awake 時点では null。
+            ICoreIpcBus? bus = null;
+            for (int frame = 0; frame < maxFrames; frame++)
+            {
+                bus = _busProvider?.Bus;
+                if (bus != null) break;
+                yield return null;
+            }
+            if (bus == null)
+            {
+                Debug.LogWarning(
+                    "[IntegratedDemoBootstrap] CoreIpcRuntime.Current.Bus did not become available within "
+                    + $"{maxFrames} frames; UI shell and IPC-dependent adapters will not start.");
+                yield break;
+            }
+
+            // 3) UI shell を起動。
+            EnsureUiShell();
+
+            // 4) RAC adapter を inactive child GameObject で生成 → bus を inject → activate。
+            //    Awake で AddComponent すると Start が OutputSceneBootstrapper.Start より先に走って
+            //    Dispatcher null で abort してしまうため、ここまで遅延させる。
+            EnsureRacAdapterAfterBusReady();
+
+            // 5) Stage adapter は Awake で AddComponent 済み（Start で no-op で抜ける作り）。
+            //    Complete 状態の Dispatcher / Roots に対する解決を再起動で確実にする。
             if (_stageHost != null)
             {
                 try { _stageHost.TryStart(); }
@@ -118,12 +154,16 @@ namespace VTuberSystemBase.IntegratedDemo
                 }
             }
 
-            // Camera adapter は OutputSceneBootstrapper.Start (= Dispatcher 作成) より後に
-            // 生成しないと Awake → TryStart が deferred になる。ここで初めて GameObject を作る。
+            // 6) Camera adapter は Dispatcher / Roots / Bus の全部が揃った段階で生成する。
             EnsureCameraAdapterAfterOutputReady();
 
-            // UI shell 起動完了後にタブ Bootstrapper を構築する。
-            // UiShellLifecycleDriver.StartShell は EnsureUiShell() で呼んでいるため、ここでは状態確認のみ。
+            // 6.5) バス → OutputCommandDispatcher のインバウンド結線。
+            //      OutputScene は Dispatcher を生成するだけでバスとは繋がない設計（OnEnvelopeReceived は
+            //      上流が繋ぎ込む契約）。同一プロセス統合ではここで bus の生インバウンドを Dispatcher へ転送し、
+            //      タブ→アダプタのコマンド（camera/command 等）が実際にハンドラへ届くようにする。
+            EnsureBusToDispatcherBridge();
+
+            // 7) UI shell が running になるのを待ち、タブ Bootstrapper を起動。
             for (int frame = 0; frame < maxFrames; frame++)
             {
                 if (VTuberSystemBase.UiToolkitShell.Bootstrap.UiShellLifecycleDriver.IsRunning)
@@ -134,6 +174,10 @@ namespace VTuberSystemBase.IntegratedDemo
             }
             if (VTuberSystemBase.UiToolkitShell.Bootstrap.UiShellLifecycleDriver.IsRunning)
             {
+                // ui-toolkit-shell の RootUiDocumentBuilder は PanelSettings を ScriptableObject.CreateInstance で
+                // 動的生成するため themeStyleSheet が null のままになる。Sample 同梱の TSS を runtime に注入する。
+                TryAssignDefaultPanelTheme();
+
                 try { IntegratedDemoUiShellHost.LaunchTabBootstrappers(); }
                 catch (Exception ex)
                 {
@@ -148,14 +192,83 @@ namespace VTuberSystemBase.IntegratedDemo
             }
         }
 
+        private void TryAssignDefaultPanelTheme()
+        {
+#if UNITY_EDITOR
+            try
+            {
+                UnityEngine.UIElements.ThemeStyleSheet? theme = null;
+                var guids = UnityEditor.AssetDatabase.FindAssets(
+                    "IntegratedDemoRuntimeTheme t:ThemeStyleSheet");
+                if (guids != null && guids.Length > 0)
+                {
+                    var path = UnityEditor.AssetDatabase.GUIDToAssetPath(guids[0]);
+                    theme = UnityEditor.AssetDatabase
+                        .LoadAssetAtPath<UnityEngine.UIElements.ThemeStyleSheet>(path);
+                }
+                if (theme == null)
+                {
+                    Debug.LogWarning(
+                        "[IntegratedDemoBootstrap] IntegratedDemoRuntimeTheme.tss not found in project; "
+                        + "PanelSettings will run without a default theme and UI may not render. "
+                        + "Reimport the 'Integrated Demo Scene Walkthrough' Sample to restore the asset.");
+                    return;
+                }
+
+                int assigned = 0;
+                foreach (var ps in Resources.FindObjectsOfTypeAll<UnityEngine.UIElements.PanelSettings>())
+                {
+                    if (ps == null) continue;
+                    if (ps.name != "VsbUiToolkitShellPanelSettings") continue;
+                    if (ps.themeStyleSheet != null) continue;
+                    ps.themeStyleSheet = theme;
+                    assigned++;
+                }
+                Debug.Log(
+                    $"[IntegratedDemoBootstrap] Assigned default ThemeStyleSheet to {assigned} PanelSettings instance(s).");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[IntegratedDemoBootstrap] TryAssignDefaultPanelTheme threw: {ex.Message}");
+            }
+#endif
+        }
+
         private void OnDestroy()
         {
             // 各 Host MonoBehaviour は OnDestroy で自分の Bootstrapper を Shutdown するので、
             // ここでは GameObject の破棄に任せる。CoreIpcBus 自体は core-ipc-foundation の
             // RuntimeBootstrap が Application.quitting で dispose するので本クラスでは触らない。
+            try { _inboundBridge?.Dispose(); } catch { /* defensive */ }
+            _inboundBridge = null;
         }
 
         // ---- private wiring ------------------------------------------------
+
+        private void EnsureRuntimeBootstrapped()
+        {
+            // core-ipc-foundation の AutoBootstrapDisabler が Editor PlayMode 中も
+            // RuntimeBootstrap.OnBeforeSceneLoad を抑制してしまうため
+            // (UNITY_INCLUDE_TESTS が com.unity.test-framework 同梱時は常時立つ)、
+            // Sample 経路では Awake 時点で手動 Bootstrap を試みる。
+            if (RuntimeBootstrap.IsBootstrapped) return;
+            try
+            {
+                Debug.Log("[IntegratedDemoBootstrap] CoreIpcRuntime not bootstrapped; starting manually.");
+                RuntimeBootstrap.Bootstrap(
+                    optionsLoader: CoreIpcConfigLoader.Load,
+                    runtimeFactory: () => new CoreIpcRuntimeHost(),
+                    quitHandlerAttacher: null,
+                    initFailureLogger: ex => Debug.LogError(
+                        $"[IntegratedDemoBootstrap] CoreIpcRuntime initialization failed: {ex}"),
+                    initSuccessLogger: () => Debug.Log(
+                        "[IntegratedDemoBootstrap] CoreIpcRuntime initialization completed."));
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[IntegratedDemoBootstrap] EnsureRuntimeBootstrapped threw: {ex}");
+            }
+        }
 
         private void EnsureBusProvider()
         {
@@ -205,14 +318,14 @@ namespace VTuberSystemBase.IntegratedDemo
 
         private void EnsureMainOutputAdapters()
         {
-            // RAC Host - Awake は重複検出のみ、Start で Initialize するので AddComponent 順序は問わない。
-            _racHost = GetComponent<RacMainOutputAdapterHost>()
-                ?? gameObject.AddComponent<RacMainOutputAdapterHost>();
-            // Reflection で OutputSceneBootstrapper / CoreIpcBusProvider を private SerializeField に inject。
-            // Inspector 配線を想定したフィールドなので、コードからは reflection で渡す。
-            BindBusProviderToRacHostViaReflection(_racHost);
+            // RAC adapter は [DefaultExecutionOrder(100)] で Start 同期 Initialize する作りなので、
+            // Awake で AddComponent すると OutputSceneBootstrapper.Start より前に走って
+            // Dispatcher null abort してしまう。後段の EnsureRacAdapterAfterBusReady() で
+            // bus と Dispatcher が揃ってから inactive child GameObject に生成する。
+            _racHost = null;
 
-            // Stage adapter Bootstrapper - Awake は no-op、Start で TryStart。
+            // Stage adapter Bootstrapper - Awake は no-op、Start で TryStart（依存未準備時は no-op で抜ける）。
+            // AddComponent はここで実施し、StartAdaptersAfterOutputReady() で TryStart() を再呼び出しする。
             _stageHost = GetComponent<StageLightingVolumeOutputAdapterBootstrapper>()
                 ?? gameObject.AddComponent<StageLightingVolumeOutputAdapterBootstrapper>();
 
@@ -221,6 +334,27 @@ namespace VTuberSystemBase.IntegratedDemo
             // ここでは AddComponent せず、StartAdaptersAfterOutputReady() の後段で
             // OutputSceneBootstrapper.Diagnostics == Complete を確認した後に InjectForTesting → AddComponent する。
             _cameraHost = null; // 後段で生成
+        }
+
+        private void EnsureRacAdapterAfterBusReady()
+        {
+            if (_racHost != null) return;
+            try
+            {
+                // RAC host を inactive な child GameObject で生成し、Inject 完了後に activate する。
+                // これで [DefaultExecutionOrder(100)] による Start 順序問題を回避でき、
+                // OutputSceneBootstrapper.Dispatcher / Roots / CoreIpcBus が揃った状態で Start が走る。
+                var racGo = new GameObject("RacMainOutputAdapterHost");
+                racGo.transform.SetParent(transform, worldPositionStays: false);
+                racGo.SetActive(false);
+                _racHost = racGo.AddComponent<RacMainOutputAdapterHost>();
+                BindBusProviderToRacHostViaReflection(_racHost);
+                racGo.SetActive(true);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[IntegratedDemoBootstrap] RAC adapter creation failed: {ex}");
+            }
         }
 
         private void EnsureCameraAdapterAfterOutputReady()
@@ -296,6 +430,36 @@ namespace VTuberSystemBase.IntegratedDemo
             catch (Exception ex)
             {
                 Debug.LogWarning($"[IntegratedDemoBootstrap] Reflection bind to RacMainOutputAdapterHost failed: {ex.Message}");
+            }
+        }
+
+        private void EnsureBusToDispatcherBridge()
+        {
+            if (_inboundBridge != null) return;
+            try
+            {
+                var host = CoreIpcRuntime.Current as CoreIpcRuntimeHost;
+                var dispatcher = _outputSceneBootstrapper?.Dispatcher as OutputCommandDispatcher;
+                if (host == null || dispatcher == null)
+                {
+                    Debug.LogWarning(
+                        "[IntegratedDemoBootstrap] Cannot wire bus->dispatcher bridge: "
+                        + $"host={(host == null ? "null" : "ok")}, dispatcher={(dispatcher == null ? "null" : "ok")}.");
+                    return;
+                }
+
+                _inboundBridge = host.SubscribeAllInbound(envelope =>
+                {
+                    if (!string.IsNullOrEmpty(envelope.Topic) && dispatcher.HasHandlerFor(envelope.Topic))
+                    {
+                        dispatcher.OnEnvelopeReceived(envelope);
+                    }
+                });
+                Debug.Log("[IntegratedDemoBootstrap] Bus -> OutputCommandDispatcher inbound bridge wired.");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[IntegratedDemoBootstrap] EnsureBusToDispatcherBridge threw: {ex}");
             }
         }
 
