@@ -1,79 +1,86 @@
 # セッション引き継ぎノート
 
-UI 設計タスク用の「API 逐次実行・画面検証ツール (VtsApiDebug)」構築と、その過程で見つけた統合デモ 2 バグの修正セッション。
+VtsApiDebug（UI/IPC API 逐次実行・画面検証ツール）の Phase2 Inspection / Phase3 Stage / Phase4 Character を実装・PlayMode 検証・コミットしたセッション。Phase5 OSC は「偽成功の罠」回避のため未実装で設計を申し送り。
 
 ## ◯ 今回やったこと
 
-- `docs/ui-api-reference.md` を逆引き構成へ全面改訂（commit `5abb602`）
-- **VtsApiDebug** デバッグツール作成（commit `ed4e559`）: `Assets/DevTools/UiApiDebug/`（Editor 専用アセンブリ）+ `scripts/launch-unity.ps1`（復旧起動・自動アクティブ化）
-  - `UiApiDebugHub`(static facade, partial) + `UiApiDebugWindow`(`Tools > VTS API Debug`)。§A シェル / §D タブ切替 / §G・§J IPC ランタイム + Phase1 Camera(§O) を実装、PlayMode 検証済み
-- **統合デモ 2 バグ修正**（commit `edc2ce9`）。これによりタブ→アダプタの IPC コマンドが実機で届くようになった（AddCamera→CameraCount 0→1、出力描画、Camera タブ UI 更新を確認）
-- テスト: camera-switcher-output-adapter **96/96**、output-renderer-shell EditMode **76/76** PASS
-- 計 3 コミット作成（main: edc2ce9 / ed4e559 / 5abb602）
+- **Phase2 Inspection（§B/C/E/F/H/K/L 読み取り専用）**（commit `64998f4`）: `UiApiDebugHub.Inspection.cs` 新規。`DumpShellConfig`/`DumpSkinValidation`/`DumpTabStates`/`DumpAssetLoader`/`DumpConnection`/`DumpOutputScene`/`DumpRacAdapter`/`DumpStageAdapter`/`DumpAllDiagnostics`。asmdef 参照追加は不要（全 Runtime 参照済み）。PlayMode で全 9 メソッド例外ゼロ・妥当値を確認。
+- **Phase3 Stage（§N）**（commit `cd81e7b`）: `UiApiDebugHub.Stage.cs` 新規。`stage/command`・`light/command`・`light/{id}/{prop}` state・`volume/override/*` を IPC 直送。light id はアダプタ採番のため `SubscribeStage()` で `lights/list`/`stage/current` を購読キャッシュ→削除/プロパティ操作の id を解決。**検証成功**: AddLight→LightCount 0→1、UI キャッシュに id 反映、プロパティ設定、RemoveLight→0。
+- **Phase4 Character（§M）**（commit `f89649a`）: `UiApiDebugHub.Character.cs` 新規。`slots/catalog`/`avatars/catalog`/slot status/error を購読キャッシュし、`AssignAvatar`/`ClearSlot`/`SendSlotCommand(Reset/Reload)` を送る。**構造的に確認**: RAC が `slot/{id}/assignment`・`command` を dispatcher 登録 → bug#2 のバス→Dispatcher ブリッジに乗る（動的 slot トピック経路、HANDOVER の「要検証」を解消）。**ただし往復は未観測**（後述）。
+- 各スライス compile 0err/0warn。Window（`UiApiDebugWindow.cs`）にも全項目を登録（グループ: Inspect / M. Character / N. Stage）。
+- 計 3 コミット（main: 64998f4 / cd81e7b / f89649a）。
 
 ## ◯ 決定事項
 
-- **操作の送り方 = IPC 直送**: Hub がシェルの `CommandClient`(IUiCommandClient) で documented topic に publish/event。reference doc §M/N/O/P に 1:1 対応。
-- **検証 = 出力アダプタ診断 + スクショ**: `IntegratedDemoBootstrap.{RacHost,StageHost,CameraHost,OutputScene}` の Diagnostics を同期読み戻し。検証の主役はスクショ/Console、返り値は補助。
-- VtsApiDebug は **Editor 専用アセンブリ**（`includePlatforms:[Editor]`, `autoReferenced:false`）。player ビルド非搭載。
-- **bug#1（camera 二重登録）修正**: Bootstrapper 側の `_ipcRegistration.RegisterAll` を除去（登録は `InitializeAsync` が所有）。
-- **bug#2（バス→Dispatcher 未結線）修正 = 正攻法A**: core-ipc に raw inbound 購読 API（`CoreIpcRuntimeHost.SubscribeAllInbound` / `MainThreadDispatchQueue.AddInboundObserver`）を追加し、`IntegratedDemoBootstrap` で `bus → OutputCommandDispatcher.OnEnvelopeReceived` を結線（`HasHandlerFor` でフィルタしノイズ回避）。
-- uloop 運用: **プロジェクト直下から実行** / `execute-dynamic-code` は **quote-free** / `launch-unity.ps1` が AppActivate で自動前面化 / UI 検証は **Sample 版 MainDemo**（SkinProfile 結線済）。
+- **検証スタンス**: 送信成否だけでなく**出力側診断の読み戻し**で往復を確認する（Stage は LightCount、Character は slot status を想定）。観測できない場合は「送信成功のみ」と正直に区別する。
+- **Phase5 OSC は今回見送り**: 自律セッション（ユーザー就寝中）で**検証不能なバイナリプロトコルコードを出荷しない**判断。理由は下記「捨てた選択肢」。
+- uloop 実行は従来通り: Unity プロジェクト直下から / `execute-dynamic-code --code '...'` は **シングルクォートで囲み中身は quote-free**（PowerShell 5.1 の native 引数分割回避）/ 文字列引数が要る操作は無引数の便利メソッド併設。
+- `MessageKind` は **`VTuberSystemBase.UiToolkitShell.Commands.MessageKind`**（State/Event）を使う。`CoreIpc.Abstractions.MessageKind` とは別型で `IUiSubscriptionClient.Subscribe` は前者を取る（CS1503 に注意）。
 
 ## ◯ 捨てた選択肢と理由
 
-- bug#1 で「InitializeAsync 側の登録除去」→ Core テスト（IpcHandlerIntegrationTests 等）が InitializeAsync の登録に依存して破綻するため不採用。Bootstrapper の RegisterAll を外す方が安全。
-- bug#2 で「暫定B: 静的トピックのみブリッジ」→ Character の `slot/{id}/*` が全て動的でカバー不能・不均一のため不採用。raw inbound API(A) を採用。
-- ツールの操作方式「ライブ Coordinator 経由」→ launcher の index キャストで内部構造依存・脆いため不採用。IPC 直送を採用。
-- 文字列引数を取る操作の uloop 実行 → `--code` の二重引用符で PS が分割失敗。無引数の便利メソッド併設で回避。
+- **Phase5 OSC の実装を見送った理由**:
+  1. **検証フックが無い**: `CameraSwitcherOutputAdapterDiagnostics.Snapshot` に OSC 受信カウンタが無い（`OscReceiverStatus` のみ）。検証はカメラ Transform を 4 段非同期（emitter worker→UDP→receiver thread→main queue→applier）越しに見るしかなく盲目では脆い。
+  2. **偽成功の罠**: UDP 送信はポート不一致でもローカルでは必ず "Send OK" を返す。受信カウンタが無いと「成功表示なのに実際は何も起きない」を判別できない。
+  3. **バイナリ正当性が閉じた DLL（UCAPI4Unity）依存**で手検証不可。さらに Editor ツールへ uOSC + UCAPI4Unity DLL + タブ Runtime の重い依存追加が必要。
+  → クリーンに検証するには**アダプタ側に受信カウンタ診断を 1 つ足す**のが本筋（production 変更なのでユーザー判断が要る）。
+- **Character の往復検証を MainDemo で行う案**: シーンに MoCap スロットが **0 個**（`slots/catalog` 空）。スロットは RAC 内部 `SlotManager.AddSlotAsync` 由来で UI コマンド面の範囲外。内部注入は深入り・高リスクのため見送り、`ProbeSlotSend()` で UI→bus 送信成功のみ確認。
 
 ## ◯ ハマりどころ
 
-- **git dubious ownership**: リポジトリ所有 SID 不一致。`git config --global --add safe.directory D:/Personal/Repositries/VTuberSystemBase` が必要（ユーザーが実行）。
-- **execute-dynamic-code の引数**: `--code` に二重引用符を含めると Windows PowerShell 5.1 が native 引数を分割（"too many arguments... got N"）。匿名オブジェクト返し/無引数メソッドで quote-free に。改行も分割要因→1 行で渡す。`Object` は `UnityEngine.Object` で修飾（CS0104 回避）。
-- **.ps1 の文字コード**: Write は BOM なし UTF-8 で書くため Windows PowerShell が CP932 誤読→日本語コメント文字化け→パースエラー。スクリプトは ASCII のみ。
-- **Editor フォーカス問題**: ウィンドウがフォーカスを受けるまで初回コンパイル遅延→uloop 接続不可。launch スクリプトで `WScript.Shell.AppActivate($pid)`。
-- **camera adapter が "ready" ログを出すのに Status=Initializing**: `TryStart` が `_ = InitializeAsync()`（fire-and-forget）直後にログ出力していただけ。実体は二重登録で L99 例外→握り潰し→OSC 未起動・Status 未遷移。
-- **adapter→shell は動くが shell→adapter が届かない非対称** → バス→Dispatcher 結線欠落が真因（次項）。
-- `IntegratedDemoBootstrap.cs` に前セッションの未コミット配線が混在（HEAD 303→現在 398 行）。私のブリッジと分離不能なため一体でコミット。
+- **`MessageKind` の二重定義**: Commands と CoreIpc.Abstractions に別々の `MessageKind` enum。Subscribe は Commands 側を取る。最初 CoreIpc 側で書いて CS1503。
+- **Bash ツールの CWD ズレ**: `git add VTuberSystemBase/Assets/...` が `VTuberSystemBase/VTuberSystemBase/...` に二重化して fail。`git -C 'D:/Personal/Repositries/VTuberSystemBase' ...` でルート明示して回避。
+- **自動コミットフック**: ターン終了時にワークツリーが自動コミットされる（Phase2 は手動コミット前に `64998f4` として勝手に commit 済みだった）。明示 commit すればフックは no-op になる（重複しない）。
+- **PlayMode 中のスクリプト変更**: compile すると domain reload で PlayMode が落ちることがある。検証は「stop→play 入れ直し→settle 6s」で安定。
+- **PlayMode 停止時の uOSC スレッド abort ログ**（`uOSC.DotNet.Thread.ThreadLoop` + `Thread was being aborted`）はカメラアダプタ OSC 受信スレッドの正常終了アーティファクト。無害。
 
-## ◯ 学び
+## ◯ 学び（実システムの所見＝ツール不具合ではない）
 
-- **`OutputCommandDispatcher.OnEnvelopeReceived` は production で未結線**だった（呼ぶのはテストのみ。コメントに「本番ではディスパッチャを bus と直接結線する想定（後続タスク）」と明記＝先送りタスク）。
-- 出力側アダプタは **publish はバス直、受信は Dispatcher 経由**。Dispatcher にバスを繋ぐのは composition root の責務。
-- **request/response が未往復**: OutputScene が Dispatcher を `responseSink:null` で生成。event/state は通るが schema 取得（avatar/volume）は往復しない＝残ギャップ。
-- avatar/stage の **Addressables 未ビルド**で catalog 空（`RuntimeData is null`）。可視検証の素材が無い。
-- uloop の有用機能: `launch`(自動検出), `screenshot`, `get-logs`, `execute-dynamic-code`, `run-tests`(PlayMode 指定で adapter テスト取得)。
+- **`DumpConnection` が永久 `IsConnected=False / Initializing`**: ループバックで実通信しているのに、シェル側 `ConnectionStatus` ファサード（`ui-toolkit-shell/Runtime/Commands/ConnectionStatus.cs`）が購読時点の latched 接続状態を再生せず、初期 Connected 遷移イベントを取りこぼす。**接続バッジ UI が永久 Initializing になる潜在バグ**。UI 再設計時に要対応。
+- **MainDemo は MoCap スロット 0**: Character の往復検証素材が無い。avatar catalog も空（Addressables 未ビルド）。
+- **Stage の dispatcher ハンドラは AddLight で 3→10 に増える**（動的 per-property ハンドラ登録）。RemoveLight 後も 10 のまま＝**削除時に per-property ハンドラが deregister されていない可能性**（要確認、軽微）。
+- **`DumpOutputScene` の `Display{req=1,eff=0,fallback=True,editorLimited=True}`** と `DumpAssetLoader Failed=1` は Editor の Display.Activate 制限・Addressables 未ビルドという既知環境要因の正しい可視化。
+- 出力側アダプタは IPC 受信を **IOutputCommandDispatcher 経由**で受ける（Stage/RAC とも `RegisterEventHandler`/`RegisterStateHandler`）。同一プロセス統合では bug#2 のバス→Dispatcher ブリッジが唯一の供給路。
 
 ## ◯ 次にやること
 
-### P1
-- **Phase2 Inspection（§B/C/E/F/H/K/L 読み取り専用）**: コマンド経路非依存・低リスク。
-- **Phase3 Stage（§N）/ Phase4 Character（§M）**: IPC 直送で実装。catalog dump→操作の順。Character の動的 slot トピックは bug#2 修正で通るはず（要検証）。
+### P1（Phase5 OSC §O-8）— 設計は確定済み。実装手順:
+1. **先にアダプタへ受信カウンタ診断を足す**（推奨）: `CameraSwitcherOutputAdapterDiagnostics.Snapshot` に `OscFramesReceived`（or LastAppliedCameraId / LastAppliedAtUnixMs）を追加。これが無いと OSC 検証は Transform 越しの脆い間接確認になり、ポート不一致の偽成功を見抜けない。
+2. `VtsApiDebug.asmdef` の references に **`VTuberSystemBase.CameraSwitcherTab.Runtime`** を追加（emitter/serializer 具体実装はここ。uOSC + UCAPI4Unity DLL を間接で引き込む）。
+3. `UiApiDebugHub.Osc.cs` 新規:
+   - serializer = `new Ucapi4UnityFlatRecordSerializer()`（`VTuberSystemBase.CameraSwitcherTab.Adapters` 系）, emitter = `new UoscFlatRecordEmitter()`（`VTuberSystemBase.CameraSwitcherTab.Adapters.Osc`）。
+   - `emitter.StartAsync(host, port)` の **port は必ずアダプタ受信ポートと一致させる**（受信側は `UoscReceiverHostAdapter.StartAsync(host, port)` で外部注入。`IntegratedDemoConfig` は 127.0.0.1:9000＝`DumpShellConfig` 出力。**送信前にアダプタ受信ポートを実機確認**すること。UDP はポート違いでも Send OK を返すため）。
+   - `CameraSnapshot { CameraId, CameraType, Position*, Rotation*(unit quaternion), FocalLengthMm>0, SensorWidthMm/HeightMm>0, NearClipM<FarClipM, ... }` を組む（不正値は SerializeResult.Invalid）。`CameraId` は Contracts の型（採番済み id 文字列から構築。型定義の場所を要確認）。
+   - `address = OscAddressBuilder.BuildFlatAddress(cameraId)`、`var sr = serializer.Serialize(snapshot); if (sr.Success) emitter.Send(address, sr.Record);`。
+   - 検証: AddCamera→id 取得（DumpCameraAdapter.Cameras）→特徴的な position で OSC 送信→(1) の受信カウンタ or カメラ GameObject Transform で確認。
+4. 無引数便利メソッド（quote-free）: `SendOscToActiveCameraDemo()` 等。
 
 ### P2
-- **Phase5 OSC（§O-8）**: `/ucapi/camera/{id}/flat` を UdpClient 直送 or 既存 emitter 再利用。
-- 申し送り: **request/response の responseSink 結線**（schema 取得復活）。
-- 既存テスト失敗 `CoreIpcRuntimeHostTests.Initialize_TransitionsThroughInitializingToRunning`（assert は `transport.ConnectClientCallCount>=1`、本作業と無関係＝既存。要調査）。
+- 申し送り: **`ConnectionStatus` ファサードの latched 状態取りこぼし**修正（接続バッジ永久 Initializing バグ）。
+- 申し送り: **request/response の responseSink 結線**（avatar/volume schema 取得の往復復活。OutputScene が `responseSink:null` で Dispatcher 生成）。
+- Stage の per-property ハンドラ deregister 漏れ確認（AddLight→RemoveLight で dispatcher handler 数が戻らない件）。
+- 既存テスト失敗 `CoreIpcRuntimeHostTests.Initialize_TransitionsThroughInitializingToRunning`（本作業と無関係＝既存）。
+- avatar/stage の **Addressables 未ビルド**で可視検証素材が無い件（catalog 空 / RuntimeData null）。
 
 ### 注意
-- 未コミットの**無関係変更が残存**: `Assets/Demo`・`Assets/UI Toolkit` の削除、`package.json`・`ProjectSettings/EditorSettings.asset`・Sample README の変更、`Assets/Samples/...` 取込、`.uloop/outputs/*`・`.tmp_screenshots/*`。ユーザー判断でレビュー/コミット/gitignore を。
+- 既知の環境エラー 7 件（Addressables 未ビルド系 + VolumeManager 未初期化）は PlayMode 起動で常に出る。本ツール由来ではない。
 
 ## ◯ 関連ファイル
 
-### 今回追加
-- `docs/ui-api-reference.md`（逆引きリファレンス）
-- `scripts/launch-unity.ps1`（Editor 復旧起動）
-- `VTuberSystemBase/Assets/DevTools/UiApiDebug/`：`UiApiDebugHub.cs` / `UiApiDebugHub.Camera.cs` / `UiApiDebugWindow.cs` / `VtsApiDebug.asmdef`
+### 今回追加（VtsApiDebug、全て Editor 専用）
+- `VTuberSystemBase/Assets/DevTools/UiApiDebug/UiApiDebugHub.Inspection.cs`（Phase2）
+- `VTuberSystemBase/Assets/DevTools/UiApiDebug/UiApiDebugHub.Stage.cs`（Phase3）
+- `VTuberSystemBase/Assets/DevTools/UiApiDebug/UiApiDebugHub.Character.cs`（Phase4）
+- `VTuberSystemBase/Assets/DevTools/UiApiDebug/UiApiDebugWindow.cs`（項目登録、更新）
 
-### 今回修正（production）
-- `Packages/com.hidano.vtuber-system-base.camera-switcher-output-adapter/Runtime/CameraSwitcherOutputAdapterBootstrapper.cs`（bug#1）
-- `Packages/com.hidano.vtuber-system-base.core-ipc-foundation/Runtime/Core/Dispatch/MainThreadDispatchQueue.cs`（bug#2: observer）
-- `Packages/com.hidano.vtuber-system-base.core-ipc-foundation/Runtime/Core/CoreIpcRuntimeHost.cs`（bug#2: SubscribeAllInbound）
-- `Packages/com.hidano.vtuber-system-base.output-renderer-shell/Runtime/Dispatch/OutputCommandDispatcher.cs`（bug#2: HasHandlerFor）
-- `Packages/com.hidano.vtuber-system-base.integrated-demo/Runtime/IntegratedDemoBootstrap.cs`（bug#2: ブリッジ結線。前セッション配線も混在）
+### Phase5 で触る予定
+- `VTuberSystemBase/Assets/DevTools/UiApiDebug/VtsApiDebug.asmdef`（CameraSwitcherTab.Runtime 参照追加）
+- `Packages/com.hidano.vtuber-system-base.camera-switcher-tab/Runtime/Adapters/Osc/UoscFlatRecordEmitter.cs`（再利用）
+- `Packages/com.hidano.vtuber-system-base.camera-switcher-tab/Runtime/Adapters/Ucapi/Ucapi4UnityFlatRecordSerializer.cs`（再利用）
+- `Packages/com.hidano.vtuber-system-base.camera-switcher-tab/Runtime/Contracts/{CameraSnapshot,OscAddressBuilder,UcapiFlatRecord,IUcapiOscEmitter}.cs`（契約。Contracts は参照済み）
+- `Packages/com.hidano.vtuber-system-base.camera-switcher-output-adapter/Runtime/Diagnostics/CameraSwitcherOutputAdapterDiagnostics.cs`（受信カウンタ追加候補）
 
 ### 環境
-- Unity Editor `6000.3.10f1`（`D:\UnityEditors\6000.3.10f1\Editor\Unity.exe`）
-- Unity プロジェクトルート: `D:\Personal\Repositries\VTuberSystemBase\VTuberSystemBase`
-- uloop CLI（グローバル）。検証用シーン: `Assets/Samples/VTuberSystemBase Integrated Demo/0.1.0/Integrated Demo Scene Walkthrough/MainDemo.unity`
+- Unity Editor `6000.3.10f1`（`D:\UnityEditors\6000.3.10f1\Editor\Unity.exe`）。プロジェクトルート: `D:\Personal\Repositries\VTuberSystemBase\VTuberSystemBase`。
+- uloop CLI（グローバル）。検証用シーン: `Assets/Samples/VTuberSystemBase Integrated Demo/0.1.0/Integrated Demo Scene Walkthrough/MainDemo.unity`。
+- 逆引きリファレンス: `docs/ui-api-reference.md`。
