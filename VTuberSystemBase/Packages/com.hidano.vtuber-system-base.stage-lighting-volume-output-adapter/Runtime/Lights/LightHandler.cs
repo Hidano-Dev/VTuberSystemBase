@@ -29,6 +29,12 @@ namespace VTuberSystemBase.StageLightingVolumeOutputAdapter.Lights
         private readonly Func<string> _idFactory;
         private bool _disposed;
 
+        // Number of dispatcher handlers this LightHandler has contributed to the
+        // (process-shared) diagnostics RegisteredHandlerCount. Tracked so teardown can
+        // subtract exactly its own share — the counter is shared with the stage / volume
+        // / preview handlers, so resetting it to 0 here would corrupt their counts.
+        private int _ownedHandlerCount;
+
         public LightHandler(
             IOutputCommandDispatcher dispatcher,
             IOutputSceneRoots roots,
@@ -55,7 +61,7 @@ namespace VTuberSystemBase.StageLightingVolumeOutputAdapter.Lights
         {
             _tokens.Add(_dispatcher.RegisterEventHandler<LightCommandDto>(
                 StageLightingTopics.LightCommand, OnLightCommand));
-            _diagnostics.IncrementHandlerCount(1);
+            AddOwnedHandlers(1);
             // Initial empty list publish so the UI can render an empty section.
             _sink.PublishState(StageLightingTopics.LightsList, new LightListDto(System.Array.Empty<LightListItemDto>()));
         }
@@ -141,11 +147,13 @@ namespace VTuberSystemBase.StageLightingVolumeOutputAdapter.Lights
                 return;
             }
             // Dispose property handlers, destroy GameObject, remove from registry, republish list.
+            var removedHandlers = entry.PropertyHandlers.Count;
             foreach (var d in entry.PropertyHandlers)
             {
                 try { d.Dispose(); } catch { /* ignore */ }
             }
             entry.PropertyHandlers.Clear();
+            AddOwnedHandlers(-removedHandlers);
             try { Object.DestroyImmediate(entry.GameObject); } catch { /* ignore */ }
             _registry.Remove(lightId!);
             _diagnostics.SetLightCount(_registry.Count);
@@ -176,7 +184,15 @@ namespace VTuberSystemBase.StageLightingVolumeOutputAdapter.Lights
             entry.PropertyHandlers.Add(_dispatcher.RegisterStateHandler<string>(
                 StageLightingTopics.LightProperty(id, StageLightingTopics.PropertyDisplayName),
                 cmd => _applier.ApplyDisplayName(id, cmd)));
-            _diagnostics.IncrementHandlerCount(entry.PropertyHandlers.Count);
+            AddOwnedHandlers(entry.PropertyHandlers.Count);
+        }
+
+        // Mirrors every diagnostics handler-count change with a local tally so Dispose
+        // can subtract exactly this handler's contribution from the shared counter.
+        private void AddOwnedHandlers(int delta)
+        {
+            _ownedHandlerCount += delta;
+            _diagnostics.IncrementHandlerCount(delta);
         }
 
         public void Dispose()
@@ -199,6 +215,9 @@ namespace VTuberSystemBase.StageLightingVolumeOutputAdapter.Lights
             _registry.Clear();
             _diagnostics.SetLightCount(0);
             try { _tokens.Dispose(); } catch { /* ignore */ }
+            // Return our remaining share (the Start command handler + any per-light
+            // handlers not already removed) to the shared diagnostics counter.
+            AddOwnedHandlers(-_ownedHandlerCount);
         }
     }
 }

@@ -98,6 +98,9 @@ namespace VTuberSystemBase.StageLightingVolumeOutputAdapter.Tests.Editor
             var lists = _sink.PublishedStates.Where(p => p.Topic == StageLightingTopics.LightsList).ToList();
             Assert.That(lists.Count, Is.EqualTo(1));
             Assert.That(((LightListDto)lists[0].Payload!).Items.Count, Is.EqualTo(0));
+            // Diagnostics handler count returns to the post-Start baseline: the 7
+            // per-light handlers were released, only the light/command handler remains.
+            Assert.That(_diag.RegisteredHandlerCount, Is.EqualTo(1));
         }
 
         [Test]
@@ -123,6 +126,9 @@ namespace VTuberSystemBase.StageLightingVolumeOutputAdapter.Tests.Editor
             _sut.Dispose();
             Assert.That(_sut.Registry.Count, Is.EqualTo(0));
             Assert.That(_dispatcher.RegisteredHandlerCount, Is.EqualTo(0));
+            // LightHandler subtracts exactly its own contribution from the shared
+            // diagnostics counter on teardown (here it is the only contributor).
+            Assert.That(_diag.RegisteredHandlerCount, Is.EqualTo(0));
         }
     }
 }
