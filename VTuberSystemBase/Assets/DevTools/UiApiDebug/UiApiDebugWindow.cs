@@ -104,6 +104,12 @@ namespace VtsApiDebug
             new DebugAction("リクエスト/レスポンス", "プローブの後始末", UiApiDebugHub.CleanupProbe),
             new DebugAction("リクエスト/レスポンス", "直近カメラのVolume schemaを要求", UiApiDebugHub.RequestVolumeMetadataOnLastCamera),
             new DebugAction("リクエスト/レスポンス", "Volume schema結果", UiApiDebugHub.DumpVolumeMetaResult),
+
+            // RDS+Spout 出力経路の実証（シーン非変更・OBS 不要。SpoutSender 数で成立判定）
+            new DebugAction("RDS/Spout 検証", "RDS Spout検証 → Display1", UiApiDebugHub.ProbeRdsSpoutToDisplay1),
+            new DebugAction("RDS/Spout 検証", "RDS Spout検証 → Display0", UiApiDebugHub.ProbeRdsSpoutToDisplay0),
+            new DebugAction("RDS/Spout 検証", "RDS検証の後始末", UiApiDebugHub.CleanupRdsProbe),
+            new DebugAction("RDS/Spout 検証", "現在のシーンにRDS結線（Edit時・保存）", UiApiDebugHub.SetupRdsOnCurrentScene),
         };
 
         private Vector2 _buttonScroll;

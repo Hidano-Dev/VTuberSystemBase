@@ -15,7 +15,9 @@
         "VTuberSystemBase.CameraSwitcherOutputAdapter.Domain",
         "VTuberSystemBase.CameraSwitcherOutputAdapter.Abstractions",
         "VTuberSystemBase.OutputRendererShell.Runtime",
-        "VTuberSystemBase.IntegratedDemo.Runtime"
+        "VTuberSystemBase.IntegratedDemo.Runtime",
+        "Hidano.RuntimeDisplaySelector",
+        "Klak.Spout.Runtime"
     ],
     "includePlatforms": [
         "Editor"
