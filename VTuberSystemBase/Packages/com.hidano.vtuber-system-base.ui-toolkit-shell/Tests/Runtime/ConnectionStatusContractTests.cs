@@ -199,5 +199,48 @@ namespace VTuberSystemBase.UiToolkitShell.Tests.Runtime
         {
             Assert.Throws<ArgumentNullException>(() => new ConnectionStatus(null!));
         }
+
+        [Test]
+        [Description("購読開始前に既に Connected まで遷移済み（loopback で一瞬で接続）の場合、構築時に latched 状態を反映して Initializing に取り残されない（接続バッジ永久 Initializing バグの回帰防止）")]
+        public void Construction_WhenAlreadyConnected_ReflectsLatchedState()
+        {
+            var fake = new FakeIpcClient();
+            fake.SetConnectionState(ConnectionState.Connecting);
+            fake.SetConnectionState(ConnectionState.Connected);
+
+            IConnectionStatus status = new ConnectionStatus(fake);
+
+            Assert.That(status.CurrentStatus, Is.EqualTo(ConnectionStatusCode.Connected),
+                "購読前に完了していた Connected 遷移を latched 反映で拾うこと");
+            Assert.That(status.IsConnected, Is.True);
+        }
+
+        [Test]
+        [Description("CurrentState=Disconnected（未接続の初期値）で構築した場合は Initializing grace を維持する（Disconnected と初期値は区別できないため）")]
+        public void Construction_WhenDisconnected_StaysInitializing()
+        {
+            var fake = new FakeIpcClient(); // デフォルト CurrentState = Disconnected
+
+            IConnectionStatus status = new ConnectionStatus(fake);
+
+            Assert.That(status.CurrentStatus, Is.EqualTo(ConnectionStatusCode.Initializing));
+            Assert.That(status.IsConnected, Is.False);
+        }
+
+        [Test]
+        [Description("購読前に Reconnecting 等の非 Disconnected 状態だった場合も latched 反映される")]
+        public void Construction_WhenReconnecting_ReflectsLatchedState()
+        {
+            var fake = new FakeIpcClient();
+            fake.SetConnectionState(ConnectionState.Connecting);
+            fake.SetConnectionState(ConnectionState.Connected);
+            fake.SetConnectionState(ConnectionState.Disconnected);
+            fake.SetConnectionState(ConnectionState.Reconnecting);
+
+            IConnectionStatus status = new ConnectionStatus(fake);
+
+            Assert.That(status.CurrentStatus, Is.EqualTo(ConnectionStatusCode.Reconnecting));
+            Assert.That(status.IsConnected, Is.False);
+        }
     }
 }

@@ -25,6 +25,20 @@ namespace VTuberSystemBase.UiToolkitShell.Commands
             currentStatus = ConnectionStatusCode.Initializing;
             stateChangedHandler = HandleConnectionStateChanged;
             bus.Diagnostics.ConnectionStateChanged += stateChangedHandler;
+
+            // ConnectionStateChanged はイベントであり、購読より前に起きた遷移は再生しない。
+            // 同一プロセスのループバックでは購読登録までに接続が Connected まで一瞬で進むため、
+            // その遷移を取りこぼすと currentStatus が Initializing に取り残される（接続バッジが
+            // 永久に「初期化中」表示になる潜在バグ）。購読登録の直後に latched な CurrentState を
+            // 一度反映して取りこぼしを塞ぐ。購読→読み取りの順なので、読み取りより後に来る遷移は
+            // ハンドラが拾い、読み取り時点で既に済んでいた遷移はここで拾う（重複は
+            // HandleConnectionStateChanged の mapped == currentStatus ガードが吸収する）。
+            // ただし Disconnected は「未接続の初期値」と区別がつかないため、Initializing grace を維持する。
+            var latched = bus.Diagnostics.CurrentState;
+            if (latched != ConnectionState.Disconnected)
+            {
+                HandleConnectionStateChanged(ConnectionState.Disconnected, latched);
+            }
         }
 
         public bool IsConnected => currentStatus == ConnectionStatusCode.Connected;
