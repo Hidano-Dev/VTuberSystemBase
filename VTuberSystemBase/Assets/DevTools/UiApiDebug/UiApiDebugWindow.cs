@@ -87,6 +87,12 @@ namespace VtsApiDebug
             new DebugAction("O-8. OSC", "Start OSC Emitter", UiApiDebugHub.StartOscEmitter),
             new DebugAction("O-8. OSC", "Send OSC -> Last Camera", UiApiDebugHub.SendOscToLastCameraDemo),
             new DebugAction("O-8. OSC", "Stop OSC Emitter", UiApiDebugHub.StopOscEmitter),
+
+            new DebugAction("Req/Resp", "Probe Bus Req/Resp (echo)", UiApiDebugHub.ProbeBusRequestResponse),
+            new DebugAction("Req/Resp", "Dump Probe Result", UiApiDebugHub.DumpProbeResult),
+            new DebugAction("Req/Resp", "Cleanup Probe", UiApiDebugHub.CleanupProbe),
+            new DebugAction("Req/Resp", "Request VolumeMeta (last cam)", UiApiDebugHub.RequestVolumeMetadataOnLastCamera),
+            new DebugAction("Req/Resp", "Dump VolumeMeta Result", UiApiDebugHub.DumpVolumeMetaResult),
         };
 
         private Vector2 _buttonScroll;
