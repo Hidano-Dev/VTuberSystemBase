@@ -36,7 +36,7 @@ namespace VTuberSystemBase.OutputRendererShell.Dispatch
 
         private readonly HandlerRegistry _registry = new();
         private readonly OutputShellLogger _logger;
-        private readonly Action<MessageEnvelope>? _responseSink;
+        private Action<MessageEnvelope>? _responseSink;
         private readonly JsonSerializerOptions _serializerOptions;
         private bool _disposed;
 
@@ -54,6 +54,18 @@ namespace VTuberSystemBase.OutputRendererShell.Dispatch
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _responseSink = responseSink;
             _serializerOptions = CreateSerializerOptions();
+        }
+
+        /// <summary>
+        /// 応答シンクを後から差し替える。<c>OutputSceneBootstrapper</c> は単体 spec として Dispatcher を
+        /// <c>responseSink: null</c> で生成し（request の応答送信路はトランスポートに依存するため単体では持たない）、
+        /// 同一プロセス統合の composition root（<c>IntegratedDemoBootstrap</c>）がバス→Dispatcher の
+        /// inbound ブリッジを張る箇所で、応答をバスの outbound へ流すシンクをここで注入する。
+        /// メインスレッドからのみ呼ぶこと（クラス全体のスレッド制約に従う）。
+        /// </summary>
+        public void SetResponseSink(Action<MessageEnvelope>? responseSink)
+        {
+            _responseSink = responseSink;
         }
 
         /// <inheritdoc />

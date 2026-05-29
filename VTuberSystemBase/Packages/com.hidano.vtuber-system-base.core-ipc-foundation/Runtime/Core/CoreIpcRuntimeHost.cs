@@ -107,6 +107,68 @@ namespace VTuberSystemBase.CoreIpc.Core
             return queue.AddInboundObserver(observer);
         }
 
+        /// <summary>
+        /// Encodes <paramref name="envelope"/> and sends it on the same outbound channel the bus
+        /// uses for its own sends. Same-process composition roots wire this as the
+        /// <c>OutputCommandDispatcher</c>'s response sink so request handlers running on the
+        /// output side can return their <see cref="MessageKind.Response"/> to the UI — the
+        /// inbound path already routes Responses to the correlation registry
+        /// (<see cref="RouteInboundBytes"/>), so this is the missing return leg.
+        /// Fire-and-forget; encode / send failures are logged, mirroring <c>CoreIpcBus.Publish</c>.
+        /// Does nothing (logs a warning) before the runtime is initialized.
+        /// </summary>
+        public void SendEnvelope(MessageEnvelope envelope)
+        {
+            var codec = Volatile.Read(ref _codec);
+            var outbound = Volatile.Read(ref _outbound);
+            if (codec is null || outbound is null)
+            {
+                _logWarning?.Invoke(
+                    "CoreIpcRuntime.SendEnvelope is unavailable; runtime has not been initialized.");
+                return;
+            }
+
+            var encoded = codec.Encode(envelope);
+            if (!encoded.Success)
+            {
+                _logWarning?.Invoke(
+                    $"CoreIpcRuntime.SendEnvelope: encode failed on topic '{envelope.Topic}': {encoded.Error?.Message}");
+                return;
+            }
+
+            if (!outbound.IsConnected)
+            {
+                _logWarning?.Invoke(
+                    $"CoreIpcRuntime.SendEnvelope: outbound not connected; dropping envelope on topic '{envelope.Topic}'.");
+                return;
+            }
+
+            try
+            {
+                var sendTask = outbound.SendAsync(encoded.Value, CancellationToken.None);
+                if (sendTask.IsCompleted)
+                {
+                    sendTask.GetAwaiter().GetResult();
+                }
+                else
+                {
+                    var task = sendTask.AsTask();
+                    task.ContinueWith(static (t, state) =>
+                    {
+                        var logger = (Action<string, Exception>?)state;
+                        if (t.Exception is not null && logger is not null)
+                        {
+                            logger("CoreIpcRuntime.SendEnvelope background send faulted.", t.Exception);
+                        }
+                    }, _logError, TaskScheduler.Default);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logError?.Invoke("CoreIpcRuntime.SendEnvelope send failed.", ex);
+            }
+        }
+
         public async Task InitializeAsync(CoreIpcOptions options, CancellationToken cancellationToken = default)
         {
             if (options is null) throw new ArgumentNullException(nameof(options));

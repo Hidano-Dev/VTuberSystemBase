@@ -242,5 +242,44 @@ namespace VTuberSystemBase.OutputRendererShell.EditModeTests
             LogAssert.Expect(LogType.Warning, new Regex(@"response sink is not configured"));
             sut.OnEnvelopeReceived(MakeEnvelope(MessageKind.Request, "topic.q", 3, correlationId: "c-q"));
         }
+
+        [Test]
+        [Description("responseSink:null で生成後に SetResponseSink で後付け注入すると、以降の request 応答がそのシンクへ送出される（composition root の後結線パスを担保）")]
+        public void SetResponseSink_AfterNullConstruction_RoutesResponseToInjectedSink()
+        {
+            var logger = new OutputShellLogger(LogLevel.Verbose);
+            using var sut = new OutputCommandDispatcher(logger, responseSink: null);
+
+            var sentResponses = new List<MessageEnvelope>();
+            sut.SetResponseSink(env => sentResponses.Add(env));
+
+            using var token = sut.RegisterRequestHandler<int, string>("topic.late", req => $"echo:{req.Payload}");
+            sut.OnEnvelopeReceived(MakeEnvelope(MessageKind.Request, "topic.late", 9, correlationId: "c-late"));
+
+            Assert.AreEqual(1, sentResponses.Count, "後付けシンクに 1 件送出されること");
+            var resp = sentResponses[0];
+            Assert.AreEqual(MessageKind.Response, resp.Kind);
+            Assert.AreEqual("topic.late", resp.Topic);
+            Assert.AreEqual("c-late", resp.CorrelationId);
+            Assert.AreEqual("echo:9", resp.Payload.GetString());
+        }
+
+        [Test]
+        [Description("SetResponseSink(null) でシンクを外すと、以降の request 応答は警告で抑止される")]
+        public void SetResponseSink_Null_SuppressesResponseWithWarning()
+        {
+            var logger = new OutputShellLogger(LogLevel.Verbose);
+            var sentResponses = new List<MessageEnvelope>();
+            using var sut = new OutputCommandDispatcher(logger, env => sentResponses.Add(env));
+
+            sut.SetResponseSink(null);
+
+            using var token = sut.RegisterRequestHandler<int, int>("topic.off", req => req.Payload * 2);
+
+            LogAssert.Expect(LogType.Warning, new Regex(@"response sink is not configured"));
+            sut.OnEnvelopeReceived(MakeEnvelope(MessageKind.Request, "topic.off", 4, correlationId: "c-off"));
+
+            Assert.AreEqual(0, sentResponses.Count, "シンクを外した後は送出されないこと");
+        }
     }
 }

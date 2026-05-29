@@ -455,7 +455,12 @@ namespace VTuberSystemBase.IntegratedDemo
                         dispatcher.OnEnvelopeReceived(envelope);
                     }
                 });
-                Debug.Log("[IntegratedDemoBootstrap] Bus -> OutputCommandDispatcher inbound bridge wired.");
+
+                // 帰り道: 出力側 request ハンドラの応答をバスの outbound へ流す。inbound ブリッジが
+                // request を Dispatcher へ届けても、応答シンクが無いと Response が捨てられる（OutputScene は
+                // 単体 spec として responseSink:null で生成する契約）。ここで結線して往復を成立させる。
+                dispatcher.SetResponseSink(host.SendEnvelope);
+                Debug.Log("[IntegratedDemoBootstrap] Bus -> OutputCommandDispatcher inbound bridge + response sink wired.");
             }
             catch (Exception ex)
             {
