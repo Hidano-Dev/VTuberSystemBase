@@ -50,6 +50,17 @@ Stage 診断修正の検証: MainDemo・PlayMode で `DumpStageAdapter` の `Han
 - **二重応答リスク無し**: camera は Dispatcher 経由のみ登録（バスの subscriptions には未登録）。bridge は `HasHandlerFor` で絞って転送。
 - **注意**: SendEnvelope は **Dispatcher 経由の request handler 専用の応答路**。バス直結（`ICoreIpcBus.RegisterRequestHandler`）の handler はバス自身が応答するので SendEnvelope 不要（混同しないこと）。
 
+## ◯ MainDemo を RDS+Spout 出力経路に結線（commit `5af253c` editor / `c67c0a0` production scene）
+
+「Display1=UI / Display2=Skybox の本番想定出力を VtsApiDebug ボタン群で検証できない」という指摘から、原因が **RuntimeDisplaySelector（RDS）が実装・パッケージ導入済み（0.1.1）なのに MainDemo で未結線（RoutingProvider=BuiltIn のまま・Spout名空・Facade未配置）** だったと判明し、結線した。
+
+- **背景**: `OutputSceneBootstrapper._routingProvider` は既定 `BuiltIn`（`Display.Activate` ベース、Editor では no-op）。`RuntimeDisplaySelector` を選ぶと `RuntimeDisplaySelectorRoutingService` 経由で RDS Facade（`Hidano.RuntimeDisplaySelector.RuntimeDisplaySelector.Current`）に `AssignCameraToDisplay` し、Klak Spout（2.0.6 導入済み）で OBS 直送できる。BuiltIn/RDS は README で別配信形態として併記。
+- **実証（シーン非変更・OBS不要）**: VtsApiDebug `ProbeRdsSpoutToDisplay0/1` で PlayMode 中に RDS Facade を一時生成＋カメラを displayIndex 0/1 にアサイン → `Klak.Spout.SpoutSender` コンポーネント数が増えることで Spout 成立を確認。**displayIndex=1 でも成立**（Spout は仮想出力で物理ディスプレイ数=Editor制約に非依存）。
+- **本結線**: `VtsApiDebug.SetupRdsOnCurrentScene()`（Editor API、SerializedObject + EditorSceneManager.SaveScene、手書き YAML なし）で MainDemo に RDS Facade GameObject を配置＋`RoutingProvider=RuntimeDisplaySelector`＋`_spoutSenderName="VsbMainOutput"` に設定・保存。
+- **検証**: PlayMode で `DumpOutputScene` が `fallback=False, eff=1`（旧 `fallback=True, eff=0`）。起動時に `OutputSceneBootstrapper` が自動でメイン出力カメラを RDS 経由 Spout sender `RuntimeDisplaySelector_Display_1` にアサイン（SpoutSender 数=1）。Spout エラー 0。
+- **OBS 確認手順（人間）**: PlayMode 中、OBS の Spout Source で `RuntimeDisplaySelector_Display_1` を選べば Editor のまま Display2 相当（メイン出力）が見える。実 sender 名は RDS の `SenderNamingPolicy`（`RuntimeDisplaySelector_Display_{index}`）依存で、`_spoutSenderName` は経路有効化の意思表示＋診断用（`DefaultRuntimeDisplaySelectorBridge` は名前を直接使わない）。
+- **注意**: 物理マルチディスプレイ振り分けは依然 standalone のみ（`editorLimited=True` は情報フラグ）。Editor で見えるのは Spout 経由のみ。UI(Display1) は Game ビュー。
+
 ## ◯ ConnectionStatus 永久 Initializing バグ修正（commit `f75ca3d` production）
 
 前セッションが「UI 再設計時対応予定」とした接続バッジ永久 Initializing バグを修正。`ConnectionStatus`（`ui-toolkit-shell/Runtime/Commands/ConnectionStatus.cs`）が `ConnectionStateChanged`（イベント、過去の遷移を再生しない）を購読するだけで latched な `CurrentState` を読んでおらず、購読より前に Connected まで進んでいた場合（loopback では一瞬）に遷移を取りこぼし `Initializing` に固着していた。送信パスは `UiCommandClient` が bus 診断を直接見るため無害＝**表示限定バグ**だった。修正は購読登録の直後に `CurrentState` を一度反映（subscribe→read 順でレース回避、`mapped==currentStatus` ガードが重複吸収）。Disconnected は未接続初期値と区別不能なため Initializing grace 維持。検証: contract テスト 12/12（新規 3 件）、ui-toolkit-shell 417 pass/1 既存 skip/0 fail、PlayMode で `DumpConnection` が `IsConnected=True, CurrentStatus=Connected`（旧 False/Initializing）。
