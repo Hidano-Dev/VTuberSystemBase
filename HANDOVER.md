@@ -39,13 +39,23 @@ Stage 診断修正の検証: MainDemo・PlayMode で `DumpStageAdapter` の `Han
 - **OSC 経路は健全**: バス→Dispatcher ブリッジ（bug#2 修正）に依存しない独立の UDP 経路。受信ホスト（`UoscReceiverHostAdapter.OnDataReceived`, Unity main thread）→ `OscMessageRouter` → `Ucapi4UnityFlatRecordApplier`（UCAPI DLL）が素直に通った。
 - **既知の環境エラー 7 件は不変**（Addressables 未ビルド系 ×6 + StageLighting VolumeManager 未初期化 ×1）。OSC 検証中も同じ 7 件のみで、本変更由来のエラーは 0。
 
+## ◯ request/response（往復）復活（commit `72fc55e` production / `7a36120` editor）
+
+前セッションが「OutputScene が `responseSink:null` で Dispatcher を生成するため往復しない」と申し送った件を**実証→本実装で解消**。
+
+- **調査の結論**: request/response 機構は完成済み。`CoreIpcBus.RegisterRequestHandler`+`InvokeRequestHandlerAsync` が request→handler→`_outbound` で response 送り返しを実装。切れていたのは **Dispatcher 経由で登録したときの帰り道（responseSink）だけ**。「繋いではいけない理由」は無く、`OutputSceneBootstrapper` のコメント「OnEnvelopeReceived は上流が繋ぐ契約」どおり、前セッションが inbound bridge（行き）だけ繋いで responseSink（帰り）を繋ぎ忘れた**やり残し**。
+- **実証**（production 触らず確証）: VtsApiDebug `ProbeBusRequestResponse`（バス直結 echo）が PlayMode で `resp='echo:ping' handlerHits=1` ＝ 同一プロセス loopback で往復成立を確認。よって「response を `_outbound` に流せば UI に返る」が確実と判明。
+- **結線（3パッケージ）**: ① core-ipc `CoreIpcRuntimeHost.SendEnvelope`（envelope を encode して bus と同じ outbound へ送る public API、`SubscribeAllInbound` の対）② output-renderer-shell `OutputCommandDispatcher.SetResponseSink`（生成後に後付け注入可能化）③ integrated-demo `IntegratedDemoBootstrap.EnsureBusToDispatcherBridge` で inbound bridge の隣に `dispatcher.SetResponseSink(host.SendEnvelope)`。
+- **検証**: core-ipc 354/354・output-renderer-shell 76/76（SetResponseSink 後付け/null化の新テスト含む）。PlayMode で `RequestVolumeMetadataOnLastCamera` → `OK overrideCount=20`（camera の volume schema が responseSink 経由で実際に往復）。
+- **二重応答リスク無し**: camera は Dispatcher 経由のみ登録（バスの subscriptions には未登録）。bridge は `HasHandlerFor` で絞って転送。
+- **注意**: SendEnvelope は **Dispatcher 経由の request handler 専用の応答路**。バス直結（`ICoreIpcBus.RegisterRequestHandler`）の handler はバス自身が応答するので SendEnvelope 不要（混同しないこと）。
+
 ## ◯ 次にやること（P2 申し送り、優先度順）
 
 1. **`ConnectionStatus` ファサードの latched 状態取りこぼし**（接続バッジ永久 Initializing バグ）: `ui-toolkit-shell/Runtime/Commands/ConnectionStatus.cs` が購読時点の latched 接続状態を再生せず初期 Connected 遷移を取りこぼす。`DumpConnection` が実通信中でも `IsConnected=False/Initializing` を返す。**UI 再設計時に対応予定**（前セッション判断）。
-2. **request/response の responseSink 結線**（avatar/volume schema 取得の往復復活）: OutputScene が Dispatcher を `responseSink:null` で生成しているため request が往復しない。event/state は通る。
-3. 既存テスト失敗 `CoreIpcRuntimeHostTests.Initialize_TransitionsThroughInitializingToRunning`（本作業と無関係＝既存）。
-4. **Addressables 未ビルド**で avatar/stage の可視検証素材が無い（catalog 空）。MainDemo は MoCap スロット 0 個で Character 往復は依然未観測（前セッションからの継続）。
-5. **stage/volume/preview ハンドラの diagnostics 減算は未確認**: 今回 LightHandler のみ修正。`VolumeOverrideHandler`/`StageHandler`/`PreviewCommandHandler` も `IncrementHandlerCount` で増やすが、それぞれの teardown で同様に減算しているかは未調査（同型の診断精度バグが残っている可能性、軽微）。
+2. 既存テスト失敗 `CoreIpcRuntimeHostTests.Initialize_TransitionsThroughInitializingToRunning`（本作業と無関係＝既存。ただし今回 core-ipc Editor テストは 354/354 全 pass だったので、現在は失敗していないか別アセンブリの可能性。要再確認）。
+3. **Addressables 未ビルド**で avatar/stage の可視検証素材が無い（catalog 空）。MainDemo は MoCap スロット 0 個で Character 往復は依然未観測（前セッションからの継続）。
+4. **stage/volume/preview ハンドラの diagnostics 減算は未確認**: 今回 LightHandler のみ修正。`VolumeOverrideHandler`/`StageHandler`/`PreviewCommandHandler` も `IncrementHandlerCount` で増やすが、それぞれの teardown で同様に減算しているかは未調査（同型の診断精度バグが残っている可能性、軽微）。
 
 ## ◯ 関連ファイル
 
@@ -58,6 +68,11 @@ Stage 診断修正の検証: MainDemo・PlayMode で `DumpStageAdapter` の `Han
 - `VTuberSystemBase/Assets/DevTools/UiApiDebug/VtsApiDebug.asmdef`（CameraSwitcherTab.Runtime 参照追加）
 - `VTuberSystemBase/Packages/com.hidano.vtuber-system-base.stage-lighting-volume-output-adapter/Runtime/Lights/LightHandler.cs`（診断 handler count 減算修正, production）
 - `VTuberSystemBase/Packages/com.hidano.vtuber-system-base.stage-lighting-volume-output-adapter/Tests/Editor/LightHandlerTests.cs`（整合性アサート追加）
+- `VTuberSystemBase/Packages/com.hidano.vtuber-system-base.core-ipc-foundation/Runtime/Core/CoreIpcRuntimeHost.cs`（`SendEnvelope` 追加, production）
+- `VTuberSystemBase/Packages/com.hidano.vtuber-system-base.output-renderer-shell/Runtime/Dispatch/OutputCommandDispatcher.cs`（`SetResponseSink` 追加, production）
+- `VTuberSystemBase/Packages/com.hidano.vtuber-system-base.output-renderer-shell/Tests/EditMode/OutputCommandDispatcherTests.cs`（SetResponseSink テスト追加）
+- `VTuberSystemBase/Packages/com.hidano.vtuber-system-base.integrated-demo/Runtime/IntegratedDemoBootstrap.cs`（responseSink 結線, production）
+- `VTuberSystemBase/Assets/DevTools/UiApiDebug/UiApiDebugHub.RequestProbe.cs`（新規, 往復プローブ 2 種）
 
 ### 再利用した送信部品（変更なし）
 - `camera-switcher-tab/Runtime/Adapters/Osc/UoscFlatRecordEmitter.cs`
