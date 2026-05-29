@@ -50,12 +50,15 @@ Stage 診断修正の検証: MainDemo・PlayMode で `DumpStageAdapter` の `Han
 - **二重応答リスク無し**: camera は Dispatcher 経由のみ登録（バスの subscriptions には未登録）。bridge は `HasHandlerFor` で絞って転送。
 - **注意**: SendEnvelope は **Dispatcher 経由の request handler 専用の応答路**。バス直結（`ICoreIpcBus.RegisterRequestHandler`）の handler はバス自身が応答するので SendEnvelope 不要（混同しないこと）。
 
+## ◯ ConnectionStatus 永久 Initializing バグ修正（commit `f75ca3d` production）
+
+前セッションが「UI 再設計時対応予定」とした接続バッジ永久 Initializing バグを修正。`ConnectionStatus`（`ui-toolkit-shell/Runtime/Commands/ConnectionStatus.cs`）が `ConnectionStateChanged`（イベント、過去の遷移を再生しない）を購読するだけで latched な `CurrentState` を読んでおらず、購読より前に Connected まで進んでいた場合（loopback では一瞬）に遷移を取りこぼし `Initializing` に固着していた。送信パスは `UiCommandClient` が bus 診断を直接見るため無害＝**表示限定バグ**だった。修正は購読登録の直後に `CurrentState` を一度反映（subscribe→read 順でレース回避、`mapped==currentStatus` ガードが重複吸収）。Disconnected は未接続初期値と区別不能なため Initializing grace 維持。検証: contract テスト 12/12（新規 3 件）、ui-toolkit-shell 417 pass/1 既存 skip/0 fail、PlayMode で `DumpConnection` が `IsConnected=True, CurrentStatus=Connected`（旧 False/Initializing）。
+
 ## ◯ 次にやること（P2 申し送り、優先度順）
 
-1. **`ConnectionStatus` ファサードの latched 状態取りこぼし**（接続バッジ永久 Initializing バグ）: `ui-toolkit-shell/Runtime/Commands/ConnectionStatus.cs` が購読時点の latched 接続状態を再生せず初期 Connected 遷移を取りこぼす。`DumpConnection` が実通信中でも `IsConnected=False/Initializing` を返す。**UI 再設計時に対応予定**（前セッション判断）。
-2. 既存テスト失敗 `CoreIpcRuntimeHostTests.Initialize_TransitionsThroughInitializingToRunning`（本作業と無関係＝既存。ただし今回 core-ipc Editor テストは 354/354 全 pass だったので、現在は失敗していないか別アセンブリの可能性。要再確認）。
-3. **Addressables 未ビルド**で avatar/stage の可視検証素材が無い（catalog 空）。MainDemo は MoCap スロット 0 個で Character 往復は依然未観測（前セッションからの継続）。
-4. **stage/volume/preview ハンドラの diagnostics 減算は未確認**: 今回 LightHandler のみ修正。`VolumeOverrideHandler`/`StageHandler`/`PreviewCommandHandler` も `IncrementHandlerCount` で増やすが、それぞれの teardown で同様に減算しているかは未調査（同型の診断精度バグが残っている可能性、軽微）。
+1. **Addressables 未ビルド**で avatar/stage の可視検証素材が無い（catalog 空）。MainDemo は MoCap スロット 0 個で Character 往復は依然未観測（前セッションからの継続）。
+2. **stage/volume/preview ハンドラの diagnostics 減算は未確認**: 今回 LightHandler のみ修正。`VolumeOverrideHandler`/`StageHandler`/`PreviewCommandHandler` も `IncrementHandlerCount` で増やすが、それぞれの teardown で同様に減算しているかは未調査（同型の診断精度バグが残っている可能性、軽微）。
+3. 既存テスト失敗 `CoreIpcRuntimeHostTests.Initialize_TransitionsThroughInitializingToRunning`（本作業と無関係＝既存。ただし今回 core-ipc Editor テストは 354/354 全 pass だったので、現在は失敗していないか別アセンブリの可能性。要再確認）。
 
 ## ◯ 関連ファイル
 
@@ -73,6 +76,8 @@ Stage 診断修正の検証: MainDemo・PlayMode で `DumpStageAdapter` の `Han
 - `VTuberSystemBase/Packages/com.hidano.vtuber-system-base.output-renderer-shell/Tests/EditMode/OutputCommandDispatcherTests.cs`（SetResponseSink テスト追加）
 - `VTuberSystemBase/Packages/com.hidano.vtuber-system-base.integrated-demo/Runtime/IntegratedDemoBootstrap.cs`（responseSink 結線, production）
 - `VTuberSystemBase/Assets/DevTools/UiApiDebug/UiApiDebugHub.RequestProbe.cs`（新規, 往復プローブ 2 種）
+- `VTuberSystemBase/Packages/com.hidano.vtuber-system-base.ui-toolkit-shell/Runtime/Commands/ConnectionStatus.cs`（latched 状態反映, production）
+- `VTuberSystemBase/Packages/com.hidano.vtuber-system-base.ui-toolkit-shell/Tests/Runtime/ConnectionStatusContractTests.cs`（latched 反映テスト追加）
 
 ### 再利用した送信部品（変更なし）
 - `camera-switcher-tab/Runtime/Adapters/Osc/UoscFlatRecordEmitter.cs`
