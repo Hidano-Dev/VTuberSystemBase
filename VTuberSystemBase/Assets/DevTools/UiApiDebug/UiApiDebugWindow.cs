@@ -28,78 +28,89 @@ namespace VtsApiDebug
             public Func<string> Run { get; }
         }
 
-        // 逆引き章ごとにグループ化。新項目はここに 1 行足すだけ。
+        // 機能ごとにグループ化。新項目はここに 1 行足すだけ。
+        // 表示は日本語ラベル。各グループ末尾の // §X は逆引きリファレンス
+        // docs/ui-api-reference.md の章対応（開発者向けの内部メモ。UI には出さない）。
         private static readonly DebugAction[] Actions =
         {
-            new DebugAction("A. UI シェル", "Shell Status", UiApiDebugHub.ShellStatus),
-            new DebugAction("A. UI シェル", "Start Shell", UiApiDebugHub.StartShell),
-            new DebugAction("A. UI シェル", "Stop Shell", UiApiDebugHub.StopShell),
-            new DebugAction("A. UI シェル", "Dump Init Steps", UiApiDebugHub.DumpInitSteps),
+            // §A
+            new DebugAction("UIシェル", "シェル状態", UiApiDebugHub.ShellStatus),
+            new DebugAction("UIシェル", "シェル起動", UiApiDebugHub.StartShell),
+            new DebugAction("UIシェル", "シェル停止", UiApiDebugHub.StopShell),
+            new DebugAction("UIシェル", "初期化ステップ", UiApiDebugHub.DumpInitSteps),
 
-            new DebugAction("D. タブ切替", "Switch -> Character", UiApiDebugHub.SwitchToCharacter),
-            new DebugAction("D. タブ切替", "Switch -> Stage", UiApiDebugHub.SwitchToStage),
-            new DebugAction("D. タブ切替", "Switch -> Camera", UiApiDebugHub.SwitchToCamera),
-            new DebugAction("D. タブ切替", "Active Tab", UiApiDebugHub.ActiveTab),
-            new DebugAction("D. タブ切替", "Preload Progress", UiApiDebugHub.PreloadProgress),
+            // §D
+            new DebugAction("タブ", "キャラクタータブへ切替", UiApiDebugHub.SwitchToCharacter),
+            new DebugAction("タブ", "ステージタブへ切替", UiApiDebugHub.SwitchToStage),
+            new DebugAction("タブ", "カメラタブへ切替", UiApiDebugHub.SwitchToCamera),
+            new DebugAction("タブ", "現在のタブ", UiApiDebugHub.ActiveTab),
+            new DebugAction("タブ", "プリロード状況", UiApiDebugHub.PreloadProgress),
 
-            new DebugAction("G/J. IPC", "Runtime Status", UiApiDebugHub.RuntimeStatus),
-            new DebugAction("G/J. IPC", "Connection Status", UiApiDebugHub.ConnectionStatus),
+            // §G/§J
+            new DebugAction("IPC", "ランタイム状態", UiApiDebugHub.RuntimeStatus),
+            new DebugAction("IPC", "接続状態", UiApiDebugHub.ConnectionStatus),
 
-            new DebugAction("Inspect (read-only)", "Dump All Diagnostics", UiApiDebugHub.DumpAllDiagnostics),
-            new DebugAction("Inspect (read-only)", "B/C. Shell Config", UiApiDebugHub.DumpShellConfig),
-            new DebugAction("Inspect (read-only)", "C. Skin Validation", UiApiDebugHub.DumpSkinValidation),
-            new DebugAction("Inspect (read-only)", "D/E. Tab States", UiApiDebugHub.DumpTabStates),
-            new DebugAction("Inspect (read-only)", "F. Asset Loader", UiApiDebugHub.DumpAssetLoader),
-            new DebugAction("Inspect (read-only)", "H. Connection", UiApiDebugHub.DumpConnection),
-            new DebugAction("Inspect (read-only)", "K. Output Scene", UiApiDebugHub.DumpOutputScene),
-            new DebugAction("Inspect (read-only)", "L. RAC Adapter", UiApiDebugHub.DumpRacAdapter),
-            new DebugAction("Inspect (read-only)", "L. Stage Adapter", UiApiDebugHub.DumpStageAdapter),
+            // §B/C/E/F/H/K/L（読み取り専用の診断ダンプ）
+            new DebugAction("診断（読み取り専用）", "全診断をダンプ", UiApiDebugHub.DumpAllDiagnostics),
+            new DebugAction("診断（読み取り専用）", "シェル設定", UiApiDebugHub.DumpShellConfig),
+            new DebugAction("診断（読み取り専用）", "スキン検証", UiApiDebugHub.DumpSkinValidation),
+            new DebugAction("診断（読み取り専用）", "タブ状態", UiApiDebugHub.DumpTabStates),
+            new DebugAction("診断（読み取り専用）", "アセットローダー", UiApiDebugHub.DumpAssetLoader),
+            new DebugAction("診断（読み取り専用）", "接続診断", UiApiDebugHub.DumpConnection),
+            new DebugAction("診断（読み取り専用）", "出力シーン", UiApiDebugHub.DumpOutputScene),
+            new DebugAction("診断（読み取り専用）", "RACアダプタ", UiApiDebugHub.DumpRacAdapter),
+            new DebugAction("診断（読み取り専用）", "ステージアダプタ", UiApiDebugHub.DumpStageAdapter),
 
-            new DebugAction("M. Character", "Subscribe Character", UiApiDebugHub.SubscribeCharacter),
-            new DebugAction("M. Character", "Assign Bogus -> Slot0", UiApiDebugHub.AssignBogusToFirstSlot),
-            new DebugAction("M. Character", "Assign 1st Avatar -> Slot0", UiApiDebugHub.AssignFirstAvatarToFirstSlot),
-            new DebugAction("M. Character", "Reset Slot0", UiApiDebugHub.ResetFirstSlot),
-            new DebugAction("M. Character", "Clear Slot0", UiApiDebugHub.ClearFirstSlot),
-            new DebugAction("M. Character", "Probe Slot Send", UiApiDebugHub.ProbeSlotSend),
-            new DebugAction("M. Character", "Dump Character State (UI)", UiApiDebugHub.DumpCharacterState),
+            // §M
+            new DebugAction("キャラクター", "キャラ状態を購読", UiApiDebugHub.SubscribeCharacter),
+            new DebugAction("キャラクター", "不正アバターをスロット0へ", UiApiDebugHub.AssignBogusToFirstSlot),
+            new DebugAction("キャラクター", "先頭アバターをスロット0へ", UiApiDebugHub.AssignFirstAvatarToFirstSlot),
+            new DebugAction("キャラクター", "スロット0をリセット", UiApiDebugHub.ResetFirstSlot),
+            new DebugAction("キャラクター", "スロット0をクリア", UiApiDebugHub.ClearFirstSlot),
+            new DebugAction("キャラクター", "スロット送信プローブ", UiApiDebugHub.ProbeSlotSend),
+            new DebugAction("キャラクター", "キャラ状態（UI側）", UiApiDebugHub.DumpCharacterState),
 
-            new DebugAction("N. Stage", "Subscribe Stage", UiApiDebugHub.SubscribeStage),
-            new DebugAction("N. Stage", "Add Directional Light", UiApiDebugHub.AddDirectionalLight),
-            new DebugAction("N. Stage", "Add Point Light", UiApiDebugHub.AddPointLight),
-            new DebugAction("N. Stage", "Add Spot Light", UiApiDebugHub.AddSpotLight),
-            new DebugAction("N. Stage", "Set Last Intensity High", UiApiDebugHub.SetLastLightIntensityHigh),
-            new DebugAction("N. Stage", "Set Last Color Red", UiApiDebugHub.SetLastLightColorRed),
-            new DebugAction("N. Stage", "Remove Last Light", UiApiDebugHub.RemoveLastLight),
-            new DebugAction("N. Stage", "Unload Stage", UiApiDebugHub.UnloadStage),
-            new DebugAction("N. Stage", "Dump Stage State (UI)", UiApiDebugHub.DumpStageState),
+            // §N
+            new DebugAction("ステージ照明", "ステージ状態を購読", UiApiDebugHub.SubscribeStage),
+            new DebugAction("ステージ照明", "平行光源を追加", UiApiDebugHub.AddDirectionalLight),
+            new DebugAction("ステージ照明", "ポイント光源を追加", UiApiDebugHub.AddPointLight),
+            new DebugAction("ステージ照明", "スポット光源を追加", UiApiDebugHub.AddSpotLight),
+            new DebugAction("ステージ照明", "直近ライトの強度を上げる", UiApiDebugHub.SetLastLightIntensityHigh),
+            new DebugAction("ステージ照明", "直近ライトを赤に", UiApiDebugHub.SetLastLightColorRed),
+            new DebugAction("ステージ照明", "直近ライトを削除", UiApiDebugHub.RemoveLastLight),
+            new DebugAction("ステージ照明", "ステージをアンロード", UiApiDebugHub.UnloadStage),
+            new DebugAction("ステージ照明", "ステージ状態（UI側）", UiApiDebugHub.DumpStageState),
 
-            new DebugAction("O. Camera", "Add Perspective Camera", UiApiDebugHub.AddPerspectiveCamera),
-            new DebugAction("O. Camera", "Add Orthographic Camera", UiApiDebugHub.AddOrthographicCamera),
-            new DebugAction("O. Camera", "Activate Last Camera", UiApiDebugHub.ActivateLastCamera),
-            new DebugAction("O. Camera", "Delete Last Camera", UiApiDebugHub.DeleteLastCamera),
-            new DebugAction("O. Camera", "Create Preset (demo)", UiApiDebugHub.CreateCameraPresetDemo),
-            new DebugAction("O. Camera", "Start Preview All", UiApiDebugHub.StartPreviewAll),
-            new DebugAction("O. Camera", "Stop Preview All", UiApiDebugHub.StopPreviewAll),
-            new DebugAction("O. Camera", "Add Bloom (last cam)", UiApiDebugHub.AddBloomToLastCamera),
-            new DebugAction("O. Camera", "Enable Volume (last cam)", UiApiDebugHub.EnableVolumeOnLastCamera),
-            new DebugAction("O. Camera", "Dump Camera Adapter", UiApiDebugHub.DumpCameraAdapter),
+            // §O
+            new DebugAction("カメラ", "透視カメラを追加", UiApiDebugHub.AddPerspectiveCamera),
+            new DebugAction("カメラ", "平行投影カメラを追加", UiApiDebugHub.AddOrthographicCamera),
+            new DebugAction("カメラ", "直近カメラをアクティブ化", UiApiDebugHub.ActivateLastCamera),
+            new DebugAction("カメラ", "直近カメラを削除", UiApiDebugHub.DeleteLastCamera),
+            new DebugAction("カメラ", "プリセット作成（デモ）", UiApiDebugHub.CreateCameraPresetDemo),
+            new DebugAction("カメラ", "全カメラのプレビュー開始", UiApiDebugHub.StartPreviewAll),
+            new DebugAction("カメラ", "全カメラのプレビュー停止", UiApiDebugHub.StopPreviewAll),
+            new DebugAction("カメラ", "直近カメラにBloomを追加", UiApiDebugHub.AddBloomToLastCamera),
+            new DebugAction("カメラ", "直近カメラのVolumeを有効化", UiApiDebugHub.EnableVolumeOnLastCamera),
+            new DebugAction("カメラ", "カメラアダプタ", UiApiDebugHub.DumpCameraAdapter),
 
-            new DebugAction("O-8. OSC", "Start OSC Emitter", UiApiDebugHub.StartOscEmitter),
-            new DebugAction("O-8. OSC", "Send OSC -> Last Camera", UiApiDebugHub.SendOscToLastCameraDemo),
-            new DebugAction("O-8. OSC", "Stop OSC Emitter", UiApiDebugHub.StopOscEmitter),
+            // §O-8
+            new DebugAction("カメラOSC送信", "OSC送信を開始", UiApiDebugHub.StartOscEmitter),
+            new DebugAction("カメラOSC送信", "直近カメラへOSC送信", UiApiDebugHub.SendOscToLastCameraDemo),
+            new DebugAction("カメラOSC送信", "OSC送信を停止", UiApiDebugHub.StopOscEmitter),
 
-            new DebugAction("Req/Resp", "Probe Bus Req/Resp (echo)", UiApiDebugHub.ProbeBusRequestResponse),
-            new DebugAction("Req/Resp", "Dump Probe Result", UiApiDebugHub.DumpProbeResult),
-            new DebugAction("Req/Resp", "Cleanup Probe", UiApiDebugHub.CleanupProbe),
-            new DebugAction("Req/Resp", "Request VolumeMeta (last cam)", UiApiDebugHub.RequestVolumeMetadataOnLastCamera),
-            new DebugAction("Req/Resp", "Dump VolumeMeta Result", UiApiDebugHub.DumpVolumeMetaResult),
+            // request/response 往復
+            new DebugAction("リクエスト/レスポンス", "バス往復プローブ（echo）", UiApiDebugHub.ProbeBusRequestResponse),
+            new DebugAction("リクエスト/レスポンス", "プローブ結果", UiApiDebugHub.DumpProbeResult),
+            new DebugAction("リクエスト/レスポンス", "プローブの後始末", UiApiDebugHub.CleanupProbe),
+            new DebugAction("リクエスト/レスポンス", "直近カメラのVolume schemaを要求", UiApiDebugHub.RequestVolumeMetadataOnLastCamera),
+            new DebugAction("リクエスト/レスポンス", "Volume schema結果", UiApiDebugHub.DumpVolumeMetaResult),
         };
 
         private Vector2 _buttonScroll;
         private Vector2 _resultScroll;
         private string _lastResult = "(まだ何も実行していません)";
 
-        [MenuItem("Tools/VTS API Debug")]
+        [MenuItem("Tools/Hidano/VTuberSystem/Debug/VTS API Debug")]
         public static void Open()
         {
             GetWindow<UiApiDebugWindow>("VTS API Debug");
