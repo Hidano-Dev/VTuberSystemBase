@@ -119,6 +119,55 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &508186097
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 508186099}
+  - component: {fileID: 508186098}
+  m_Layer: 0
+  m_Name: RuntimeDisplaySelector
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &508186098
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 508186097}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dbc4ef677a8256e459954e5ea9ca9043, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Hidano.RuntimeDisplaySelector::Hidano.RuntimeDisplaySelector.RuntimeDisplaySelector
+  _initialAssignments: []
+  _assignmentFilePath: 
+  _autoRestoreTiming: 2
+  _duplicateBehavior: 0
+  _persistAcrossScenes: 0
+--- !u!4 &508186099
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 508186097}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1421610335
 GameObject:
   m_ObjectHideFlags: 0
@@ -147,14 +196,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3c92dce4508841918c167900e13f39e3, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: VTuberSystemBase.IntegratedDemo.Runtime::VTuberSystemBase.IntegratedDemo.IntegratedDemoBootstrap
   _config:
     SkinProfile: {fileID: 11400000, guid: 87b0de3bd73c4d13aa962938e3c71b61, type: 2}
     UiTargetDisplay: 0
     CameraOscHost: 127.0.0.1
     CameraOscPort: 9000
-    CameraPresetPath:
+    CameraPresetPath: 
     AdapterStartupMaxFrames: 60
   _outputSceneBootstrapper: {fileID: 1421610337}
 --- !u!114 &1421610337
@@ -167,13 +216,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c6d8e0f2a4b7c9d1e3f5a7b9c1d3e5f6, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: VTuberSystemBase.OutputRendererShell.Runtime::VTuberSystemBase.OutputRendererShell.Scene.OutputSceneBootstrapper
   _targetDisplayIndex: 1
   _fullScreenMode: 1
   _suppressEditorWarning: 0
-  _routingProvider: 0
-  _spoutSenderName:
+  _routingProvider: 1
+  _spoutSenderName: VsbMainOutput
   _autoStart: 1
   _minLogLevel: 1
 --- !u!4 &1421610338
@@ -196,3 +245,4 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 1421610338}
+  - {fileID: 508186099}
