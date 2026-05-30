@@ -1,27 +1,17 @@
 #nullable enable
-using System;
-using System.Text;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.Rendering.Universal;
 
 namespace VtsApiDebug
 {
     /// <summary>
-    /// URP（Universal Render Pipeline）有効化サポート。
+    /// 描画パイプライン（URP）の状態診断と、Spout 出力の目視検証用サポート。
     ///
-    /// 背景: このプロジェクトは URP 前提で組まれている（<c>DefaultCameraFactory</c> が
-    /// メイン出力カメラに <see cref="UniversalAdditionalCameraData"/> を明示付与、URP パッケージ /
-    /// <c>UniversalRenderPipelineGlobalSettings</c> / <c>DefaultVolumeProfile</c> 導入済み）。
-    /// しかし URP の RenderPipelineAsset（パイプライン本体）が未作成・未割当だったため実行時に Built-in RP へ
-    /// フォールバックし、URP 前提のカメラがシーンを描画できず メイン出力（= Spout 送出）が真っ黒になっていた。
-    ///
-    /// 注意: URP アセットの「プログラム生成」（<see cref="UniversalRenderPipelineAsset.Create"/> + 素の
-    /// <see cref="UniversalRendererData"/>）は Unity 6 / URP 17 では RenderGraph 必須リソースを満たせず
-    /// 不完全になり、<c>Render Graph Execution error: ...null resource index</c> でカメラが描画しなくなる。
-    /// そのため URP アセットは Editor の <c>Create &gt; Rendering &gt; URP Asset (with Universal Renderer)</c>
-    /// で正規生成し、本クラスの <see cref="AssignUrpAssetFromProject"/> で既定パイプラインへ割り当てる運用とする。
+    /// 背景: このプロジェクトは URP 前提で組まれており（出力カメラに URP 用の追加カメラデータを付与）、
+    /// URP の RenderPipelineAsset が未割当だと実行時に Built-in RP へフォールバックし、URP 前提のカメラが
+    /// シーンを描画できず メイン出力（= Spout 送出）が真っ黒になる。どの URP アセットを使うか（品質設定含む）は
+    /// Unity の <c>Project Settings &gt; Graphics / Quality</c> でユーザーが設定する範疇。
+    /// 本クラスはその設定を肩代わりせず、<see cref="DumpRenderPipeline"/> で割当状態を読み取って確認する診断のみを提供する。
     /// </summary>
     public static partial class UiApiDebugHub
     {
@@ -109,56 +99,6 @@ namespace VtsApiDebug
                 $"defaultRenderPipeline={(def != null ? def.GetType().Name + ":" + def.name : "null")}、" +
                 $"QualitySettings.renderPipeline={(q != null ? q.GetType().Name + ":" + q.name : "null")}、" +
                 $"effective={(effective != null ? effective.GetType().Name : "null (= Built-in RP)")}");
-        }
-
-        /// <summary>
-        /// プロジェクト内の <see cref="UniversalRenderPipelineAsset"/> を検索し、
-        /// <see cref="GraphicsSettings.defaultRenderPipeline"/> に割り当てる（全 Quality レベルは override 無し＝
-        /// default にフォールバックするためこれで有効化される）。Edit モード専用。
-        ///
-        /// 本セッションで生成した不完全アセット（名前に <c>Vsb</c> を含む）は候補から除外する。
-        /// 候補が 0 件 / 複数件のときはその旨を報告して割り当てない（曖昧回避）。
-        /// </summary>
-        public static string AssignUrpAssetFromProject()
-        {
-            if (Application.isPlaying)
-                return Report("AssignUrpAssetFromProject", false,
-                    "Edit モードで実行してください（PlayMode 中は設定変更が安定しません）。");
-
-            var guids = AssetDatabase.FindAssets("t:UniversalRenderPipelineAsset");
-            var sb = new StringBuilder();
-            UniversalRenderPipelineAsset? chosen = null;
-            var candidateCount = 0;
-
-            foreach (var guid in guids)
-            {
-                var path = AssetDatabase.GUIDToAssetPath(guid);
-                var asset = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(path);
-                if (asset == null) continue;
-                var isIncomplete = asset.name.IndexOf("Vsb", StringComparison.OrdinalIgnoreCase) >= 0;
-                sb.Append($"\n  - {path} (name={asset.name}{(isIncomplete ? " ※本セッション生成・不完全のため除外" : "")})");
-                if (isIncomplete) continue;
-                candidateCount++;
-                chosen = asset;
-            }
-
-            if (candidateCount == 0)
-                return Report("AssignUrpAssetFromProject", false,
-                    $"割り当て候補の URP アセットが見つかりません（除外分含む全 {guids.Length} 件）:{sb}\n" +
-                    "Editor の Create > Rendering > URP Asset (with Universal Renderer) で作成してから再実行してください。");
-
-            if (candidateCount > 1)
-                return Report("AssignUrpAssetFromProject", false,
-                    $"URP アセット候補が複数あります（{candidateCount} 件）。どれを使うか曖昧なため割り当てません:{sb}");
-
-            GraphicsSettings.defaultRenderPipeline = chosen;
-            AssetDatabase.SaveAssets();
-
-            var effective = QualitySettings.renderPipeline ?? GraphicsSettings.defaultRenderPipeline;
-            return Report("AssignUrpAssetFromProject", true,
-                $"URP アセット '{chosen!.name}' を GraphicsSettings.defaultRenderPipeline に割り当てました。" +
-                $"現在の有効パイプライン型={(effective != null ? effective.GetType().Name : "null")}。" +
-                $"候補一覧:{sb}\nPlayMode で currentRenderPipeline 非null と描画を確認してください。");
         }
     }
 }

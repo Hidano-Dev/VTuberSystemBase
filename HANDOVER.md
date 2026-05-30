@@ -5,7 +5,7 @@
 ## ◯ 今回やったこと
 
 - **根本原因特定**: プロジェクトは URP 前提（`DefaultCameraFactory` が出力カメラに `UniversalAdditionalCameraData` を明示付与、URP 17.3.0 + GlobalSettings + VolumeProfile 導入済み）なのに **URP RenderPipelineAsset 本体が未作成・未割当** → 実行時 Built-in にフォールバック → URP前提カメラが描画できず Spout 黒、と判明。
-- **URP 有効化**: ユーザが menu で正規 URP アセット（`Assets/Settings/New Universal Render Pipeline Asset.asset` + Renderer）を生成 → `UiApiDebugHub.AssignUrpAssetFromProject()` で `GraphicsSettings.defaultRenderPipeline` に割当。RenderGraph エラー（`null resource index`）消滅、カメラが正常描画するようになった（Game ビューで青空＋キューブ確認）。
+- **URP 有効化**: ユーザが menu で正規 URP アセット（`Assets/Settings/New Universal Render Pipeline Asset.asset` + Renderer）を生成し、`Project Settings > Graphics` の `GraphicsSettings.defaultRenderPipeline` に割当（恒久設定なので Editor の標準フローで行う）。RenderGraph エラー（`null resource index`）消滅、カメラが正常描画するようになった（Game ビューで青空＋キューブ確認）。
 - **第2の罠を特定**: URP 経路の SpoutSender は `CaptureMethod.Camera`＋`CameraCaptureBridge`。これは「カメラが実描画したときだけ発火」するため、`targetDisplay=1`（Display2）+ Editor 単一ディスプレイだとカメラが描画されず Spout 黒。ユーザが Game ビューを Display 2 表示にした瞬間に Spout に絵が出て確定。
 - **本番改修（RT 経路）**: `RuntimeDisplaySelectorRoutingService.Activate` を「出力カメラの `targetTexture` を専用 RenderTexture(既定1920x1080) に張り替え → RDS の `AssignRenderTextureToDisplay`（Texture モード）で Spout 送出」に変更。カメラが Display 表示状態に依存せず毎フレーム描画される＝**ディスプレイ非依存**。Editor でも standalone 単一画面でも出る。
 - **テスト更新・全パス**: output-renderer-shell EditMode 78/78、PlayMode RDS routing 4/4。
@@ -63,7 +63,7 @@
 - `Packages/.../output-renderer-shell/Tests/EditMode/Fakes/FakeRuntimeDisplaySelectorBridge.cs`
 
 ### Editor ツール（VtsApiDebug、Editor 専用）
-- `Assets/DevTools/UiApiDebug/UiApiDebugHub.Urp.cs`（`AssignUrpAssetFromProject` / `DumpRenderPipeline` / `InjectSpoutTestContent` / `RemoveSpoutTestContent`）
+- `Assets/DevTools/UiApiDebug/UiApiDebugHub.Urp.cs`（`DumpRenderPipeline` / `InjectSpoutTestContent` / `RemoveSpoutTestContent`）
 - `Assets/DevTools/UiApiDebug/UiApiDebugWindow.cs`（URP 設定・Spout 検証ボタン）
 - `Assets/DevTools/UiApiDebug/VtsApiDebug.asmdef`（`Unity.RenderPipelines.Universal.Runtime` 参照追加）
 

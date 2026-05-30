@@ -202,10 +202,9 @@ namespace VtsApiDebug
                 "直近の volume metadata request の結果を読む。", UiApiDebugHub.DumpVolumeMetaResult, RdAlways),
 
             // URP（描画パイプライン）。未割当だと Built-in にフォールバックしメイン出力が黒くなる。
+            // どの URP アセットを使うかは Project Settings > Graphics / Quality でユーザーが設定する。
             new DebugAction("URP 設定", "描画パイプライン状態を表示",
                 "現在の有効レンダーパイプライン状態をダンプ（読み取り専用）。null は Built-in RP フォールバックで出力が黒くなる原因。", UiApiDebugHub.DumpRenderPipeline, RdAlways),
-            new DebugAction("URP 設定", "プロジェクトのURPアセットを割当",
-                "プロジェクト内の正規 URP アセットを既定パイプラインに割り当てる（不完全な Vsb* は除外。候補 0/複数件なら割り当てない）。Edit モード専用。", UiApiDebugHub.AssignUrpAssetFromProject, RdEdit),
 
             // Spout 出力の目視検証（PlayMode 中）。
             new DebugAction("Spout 検証", "テスト用コンテンツを注入（Skybox＋キューブ）",

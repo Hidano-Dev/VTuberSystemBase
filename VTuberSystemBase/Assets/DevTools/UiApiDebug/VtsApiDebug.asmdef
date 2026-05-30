@@ -17,8 +17,7 @@
         "VTuberSystemBase.OutputRendererShell.Runtime",
         "VTuberSystemBase.IntegratedDemo.Runtime",
         "Hidano.RuntimeDisplaySelector",
-        "Klak.Spout.Runtime",
-        "Unity.RenderPipelines.Universal.Runtime"
+        "Klak.Spout.Runtime"
     ],
     "includePlatforms": [
         "Editor"
