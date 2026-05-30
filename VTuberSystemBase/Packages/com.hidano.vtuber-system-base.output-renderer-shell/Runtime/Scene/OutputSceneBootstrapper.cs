@@ -69,6 +69,15 @@ namespace VTuberSystemBase.OutputRendererShell.Scene
         [SerializeField]
         private Vector2Int _outputResolution = new Vector2Int(1920, 1080);
 
+        [Header("Camera")]
+        [Tooltip("メイン出力カメラの背景塗りつぶし方法。既定 SolidColor。VTuber 用途では Skybox やクロマキー用の単色を選択できる。")]
+        [SerializeField]
+        private CameraClearFlags _cameraClearFlags = CameraClearFlags.SolidColor;
+
+        [Tooltip("Clear Flags が SolidColor のときの背景色。既定 黒。クロマキー運用時はキー色（緑など）を指定する。")]
+        [SerializeField]
+        private Color _cameraBackgroundColor = Color.black;
+
         [Header("Lifecycle")]
         [Tooltip("シーン開始時に自動的に起動シーケンスを実行する場合は ON。既定 ON。")]
         [SerializeField]
@@ -194,7 +203,7 @@ namespace VTuberSystemBase.OutputRendererShell.Scene
             RunPhase(OutputSceneInitPhase.CameraReady, "create default camera", () =>
             {
                 if (_roots is null) throw new InvalidOperationException("scene roots are not initialized.");
-                _defaultCamera = DefaultCameraFactory.Create(_roots, Logger);
+                _defaultCamera = DefaultCameraFactory.Create(_roots, Logger, _cameraClearFlags, _cameraBackgroundColor);
             });
 
             RunPhase(OutputSceneInitPhase.LightReady, "create default light", () =>

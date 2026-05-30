@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-16"?>
+<test-run id="2" testcasecount="4" result="Failed" total="4" passed="3" failed="1" skipped="0" start-time="2026-05-30 11:41:08" end-time="2026-05-30 11:41:08" duration="0.333">
+  <test-suite type="TestSuite" name="VTuberSystemBase" fullname="VTuberSystemBase" result="Failed" start-time="2026-05-30 11:41:08" end-time="2026-05-30 11:41:08" duration="0.333" total="4" passed="3" failed="1" skipped="0">
+    <test-suite type="TestSuite" name="VTuberSystemBase.OutputRendererShell.PlayModeTests.dll" fullname="D:/Personal/Repositries/VTuberSystemBase/VTuberSystemBase/Library/ScriptAssemblies/VTuberSystemBase.OutputRendererShell.PlayModeTests.dll" result="Failed" start-time="2026-05-30 11:41:08" end-time="2026-05-30 11:41:08" duration="0.273" total="4" passed="3" failed="1" skipped="0">
+      <test-suite type="TestSuite" name="VTuberSystemBase" fullname="VTuberSystemBase" result="Failed" start-time="2026-05-30 11:41:08" end-time="2026-05-30 11:41:08" duration="0.185" total="4" passed="3" failed="1" skipped="0">
+        <test-suite type="TestSuite" name="OutputRendererShell" fullname="VTuberSystemBase.OutputRendererShell" result="Failed" start-time="2026-05-30 11:41:08" end-time="2026-05-30 11:41:08" duration="0.182" total="4" passed="3" failed="1" skipped="0">
+          <test-suite type="TestSuite" name="PlayModeTests" fullname="VTuberSystemBase.OutputRendererShell.PlayModeTests" result="Failed" start-time="2026-05-30 11:41:08" end-time="2026-05-30 11:41:08" duration="0.180" total="4" passed="3" failed="1" skipped="0">
+            <test-suite type="VTuberSystemBase.OutputRendererShell.PlayModeTests.DefaultCameraFactoryTests" name="DefaultCameraFactoryTests" fullname="VTuberSystemBase.OutputRendererShell.PlayModeTests.DefaultCameraFactoryTests" result="Failed" start-time="2026-05-30 11:41:08" end-time="2026-05-30 11:41:08" duration="0.169" total="4" passed="3" failed="1" skipped="0">
+              <test-case name="Create_AttachesUniversalAdditionalCameraData_AndLeavesTargetDisplayUnset" fullname="VTuberSystemBase.OutputRendererShell.PlayModeTests.DefaultCameraFactoryTests.Create_AttachesUniversalAdditionalCameraData_AndLeavesTargetDisplayUnset" result="Passed" start-time="2026-05-30 11:41:08" end-time="2026-05-30 11:41:08" duration="0.126" />
+              <test-case name="Create_CameraRender_DoesNotThrow" fullname="VTuberSystemBase.OutputRendererShell.PlayModeTests.DefaultCameraFactoryTests.Create_CameraRender_DoesNotThrow" result="Failed" start-time="2026-05-30 11:41:08" end-time="2026-05-30 11:41:08" duration="0.016">
+                <failure>
+                  <message>Unhandled log message: '[Error] BlitFinalToBackBuffer/Draw UIToolkit/uGUI Overlay: The dimensions or sample count of attachment 0 do not match RenderPass specifications (1076 x 714 1AA) vs (1920 x 1080 1AA).'. Use UnityEngine.TestTools.LogAssert.Expect</message>
+                  <stack-trace>UnityEngine.Camera:Render ()
+VTuberSystemBase.OutputRendererShell.PlayModeTests.DefaultCameraFactoryTests/&lt;&gt;c__DisplayClass7_0:&lt;Create_CameraRender_DoesNotThrow&gt;b__0 () (at ./Packages/com.hidano.vtuber-system-base.output-renderer-shell/Tests/PlayMode/DefaultCameraFactoryTests.cs:120)
+NUnit.Framework.Constraints.ThrowsConstraint/VoidInvocationDescriptor:Invoke ()
+NUnit.Framework.Constraints.ThrowsConstraint/ExceptionInterceptor:Intercept (object)
+NUnit.Framework.Constraints.ThrowsNothingConstraint:ApplyTo (object)
+NUnit.Framework.Assert:That&lt;object&gt; (object,NUnit.Framework.Constraints.IResolveConstraint,string,object[])
+NUnit.Framework.Assert:That (NUnit.Framework.TestDelegate,NUnit.Framework.Constraints.IResolveConstraint,string,object[])
+NUnit.Framework.Assert:DoesNotThrow (NUnit.Framework.TestDelegate,string,object[])
+VTuberSystemBase.OutputRendererShell.PlayModeTests.DefaultCameraFactoryTests/&lt;Create_CameraRender_DoesNotThrow&gt;d__7:MoveNext () (at ./Packages/com.hidano.vtuber-system-base.output-renderer-shell/Tests/PlayMode/DefaultCameraFactoryTests.cs:120)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr)
+
+</stack-trace>
+                </failure>
+              </test-case>
+              <test-case name="Create_ExcludesOperatorUiLayerFromCullingMask_WhenLayerDefined" fullname="VTuberSystemBase.OutputRendererShell.PlayModeTests.DefaultCameraFactoryTests.Create_ExcludesOperatorUiLayerFromCullingMask_WhenLayerDefined" result="Passed" start-time="2026-05-30 11:41:08" end-time="2026-05-30 11:41:08" duration="0.010" />
+              <test-case name="Create_PlacesCameraUnderCamerasRoot_AndRegistersToServiceLocator" fullname="VTuberSystemBase.OutputRendererShell.PlayModeTests.DefaultCameraFactoryTests.Create_PlacesCameraUnderCamerasRoot_AndRegistersToServiceLocator" result="Passed" start-time="2026-05-30 11:41:08" end-time="2026-05-30 11:41:08" duration="0.006" />
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

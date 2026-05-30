@@ -39,8 +39,20 @@ namespace VTuberSystemBase.OutputRendererShell.Scene
         /// </summary>
         /// <param name="roots">既に <see cref="OutputSceneRoots"/> として初期化されたシーンロケータ。</param>
         /// <param name="logger">既存ロガー。null 不可。</param>
+        /// <param name="clearFlags">
+        /// メイン出力カメラの背景塗りつぶし方法。既定 <see cref="CameraClearFlags.SolidColor"/>。
+        /// VTuber 用途では <see cref="CameraClearFlags.Skybox"/> やクロマキー用の単色塗りつぶしを選択できる。
+        /// </param>
+        /// <param name="backgroundColor">
+        /// <paramref name="clearFlags"/> が <see cref="CameraClearFlags.SolidColor"/> のときの背景色。
+        /// 既定 <see cref="Color.black"/>。クロマキー運用時はここに緑などのキー色を指定する。
+        /// </param>
         /// <returns>生成されたカメラ。</returns>
-        public static Camera Create(OutputSceneRoots roots, OutputShellLogger logger)
+        public static Camera Create(
+            OutputSceneRoots roots,
+            OutputShellLogger logger,
+            CameraClearFlags clearFlags = CameraClearFlags.SolidColor,
+            Color? backgroundColor = null)
         {
             var go = new GameObject("DefaultMainOutputCamera");
             go.transform.SetParent(roots.Cameras, worldPositionStays: false);
@@ -53,8 +65,8 @@ namespace VTuberSystemBase.OutputRendererShell.Scene
             camera.fieldOfView = 60f;
             camera.nearClipPlane = 0.1f;
             camera.farClipPlane = 1000f;
-            camera.clearFlags = CameraClearFlags.SolidColor;
-            camera.backgroundColor = Color.black;
+            camera.clearFlags = clearFlags;
+            camera.backgroundColor = backgroundColor ?? Color.black;
 
             int operatorUiLayer = LayerMask.NameToLayer(OperatorUiLayerName);
             if (operatorUiLayer >= 0)
