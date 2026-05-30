@@ -117,6 +117,14 @@ namespace VTuberSystemBase.IntegratedDemo
             var mountStrategy = new IntegratedTabMountStrategy(skin);
             s_currentMountStrategy = mountStrategy;
 
+            // presenter カメラは optional：トグル ON のときだけ既定実装を渡す。
+            // OFF のときは null＝従来どおり presenter カメラ無しで起動する。
+            IOperatorUiPresenterCameraFactory? presenterFactory =
+                config.CreateOperatorUiPresenterCamera
+                    ? new DefaultOperatorUiPresenterCameraFactory(
+                        config.OperatorUiPresenterCameraBackgroundColor)
+                    : null;
+
             return new UiShellConfig
             {
                 SkinProfile = skin,
@@ -125,6 +133,7 @@ namespace VTuberSystemBase.IntegratedDemo
                 RequestedTargetDisplay = config.UiTargetDisplay,
                 MinimumLogLevel = LogLevel.Info,
                 InitialTab = TabId.Character,
+                PresenterCameraFactory = presenterFactory,
             };
         }
     }

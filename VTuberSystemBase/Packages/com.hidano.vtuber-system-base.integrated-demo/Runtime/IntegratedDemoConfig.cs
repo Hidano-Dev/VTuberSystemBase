@@ -19,6 +19,12 @@ namespace VTuberSystemBase.IntegratedDemo
         [Tooltip("Display 1 のターゲット表示インデックス。既定 0 でメイン出力（Display 2+）と分離される。")]
         public int UiTargetDisplay = 0;
 
+        [Tooltip("Display 1 を毎フレーム clear/present する presenter カメラを生成する。UI Toolkit オーバーレイがカメラ無しのディスプレイで前フレーム残像により乱れるのを防ぐ。既定 ON。システム上必須ではないので、不要なら OFF にしてよい。")]
+        public bool CreateOperatorUiPresenterCamera = true;
+
+        [Tooltip("presenter カメラの背景色（Clear 色）。クロマキー運用時はキー色（緑など）を指定する。既定 黒。")]
+        public Color OperatorUiPresenterCameraBackgroundColor = Color.black;
+
         [Header("Camera Switcher (OSC)")]
         [Tooltip("OSC 送信先ホスト。空のとき camera-switcher-tab の既定（127.0.0.1）が採用される。")]
         public string CameraOscHost = "127.0.0.1";

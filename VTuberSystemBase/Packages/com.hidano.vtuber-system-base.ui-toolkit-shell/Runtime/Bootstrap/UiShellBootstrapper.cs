@@ -94,6 +94,14 @@ namespace VTuberSystemBase.UiToolkitShell.Bootstrap
         public SkinValidationReport? SkinValidationReport { get; private set; }
 
         /// <summary>
+        /// The optional clear-only presenter camera handle created via
+        /// <see cref="UiShellConfig.PresenterCameraFactory"/> for the current run, or <c>null</c>
+        /// when no factory was supplied (or it declined to create one — e.g. Edit mode). Disposed
+        /// on <see cref="StopShell"/> alongside the rest of the subsystem stack.
+        /// </summary>
+        public IDisposable? PresenterCameraHandle { get; private set; }
+
+        /// <summary>
         /// The <see cref="IDisplayAssignmentStrategy"/> applied during the most recent
         /// <see cref="StartShell"/> (Requirement 1.6, design.md §UiShellBootstrapper.DisplayAssignmentHook).
         /// Surfaces <see cref="FixedDisplayZeroStrategy.Instance"/> when the config omits one.
@@ -182,6 +190,31 @@ namespace VTuberSystemBase.UiToolkitShell.Bootstrap
             PushDisposable("RootUiDocumentArtifacts", rootArtifacts);
             _steps.Add(BootstrapStep.PanelSettingsCreated);
             _steps.Add(BootstrapStep.RootUiDocumentBuilt);
+
+            // ---- Operator UI presenter camera (optional, Display-clear surface) ----
+            // The UI Toolkit overlay panel composites directly onto the target display without a
+            // camera; when no camera clears that display each frame the overlay smears over stale
+            // buffer contents. An opt-in factory (config.PresenterCameraFactory, default null)
+            // places a clear-only camera on the resolved display to stabilise that surface. It is
+            // never on the fatal path — a missing or throwing factory just leaves the surface
+            // un-managed, which is the pre-existing behaviour.
+            if (config.PresenterCameraFactory != null)
+            {
+                try
+                {
+                    var presenterHandle = config.PresenterCameraFactory.Create(effectiveDisplay, logger);
+                    if (presenterHandle != null)
+                    {
+                        PresenterCameraHandle = presenterHandle;
+                        PushDisposable("OperatorUiPresenterCamera", presenterHandle);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.Log(LogLevel.Warning, LogCategory.Lifecycle,
+                        $"PresenterCameraFactory.Create threw; shell continues without a presenter camera: {ex.Message}", ex);
+                }
+            }
 
             // ---- TabPanelRegistry (must exist before mounting) -----------
             var registry = new TabPanelRegistry(logger);
@@ -442,6 +475,7 @@ namespace VTuberSystemBase.UiToolkitShell.Bootstrap
             PanelSettings = null;
             RootVisualElement = null;
             SkinValidationReport = null;
+            PresenterCameraHandle = null;
             DisplayAssignmentStrategy = null;
             EffectiveTargetDisplay = null;
         }

@@ -62,6 +62,17 @@ namespace VTuberSystemBase.UiToolkitShell.Bootstrap
         public IDisplayAssignmentStrategy? DisplayAssignmentStrategy { get; set; }
 
         /// <summary>
+        /// Optional. When non-null, the bootstrapper asks this factory to create a clear-only
+        /// "presenter camera" on the resolved <see cref="DisplayAssignmentStrategy"/> display so
+        /// the UI Toolkit overlay panel has a stable, cleared compositing surface. Defaults to
+        /// <c>null</c> = disabled — hosts opt in by supplying
+        /// <see cref="DefaultOperatorUiPresenterCameraFactory"/> (or a custom implementation), or
+        /// leave it null to run without a presenter camera. The returned handle is disposed on
+        /// <c>StopShell</c> in reverse order with every other subsystem.
+        /// </summary>
+        public IOperatorUiPresenterCameraFactory? PresenterCameraFactory { get; set; }
+
+        /// <summary>
         /// Optional callback invoked once during <c>StartShell</c> after the diagnostics
         /// logger is ready and before the root UIDocument is built. Production wiring
         /// passes <c>() =&gt; CommonUiRegistration.RegisterAll()</c>; tests pass a no-op or
