@@ -36,11 +36,19 @@ namespace VTuberSystemBase.OutputRendererShell.Display
     /// </remarks>
     public sealed class RuntimeDisplaySelectorRoutingService : IDisplayRoutingService
     {
+        private const int DefaultOutputWidth = 1920;
+        private const int DefaultOutputHeight = 1080;
+
         private readonly IRuntimeDisplaySelectorBridge _bridge;
         private readonly OutputShellLogger _logger;
         private readonly IDisplayProbe _probe;
         private DisplayAssignmentInfo _lastAssignment;
         private bool _disposed;
+
+        // メイン出力カメラを「物理ディスプレイ非依存」で描画させるための専用 RenderTexture と、その張り替え先カメラ。
+        // 本サービスが所有し、Dispose / fallback / 解像度変更時に解放する。
+        private RenderTexture? _outputRenderTexture;
+        private Camera? _routedCamera;
 
         /// <summary>
         /// 本番用コンストラクタ。<paramref name="bridge"/> を省略すると RDS Facade
@@ -92,29 +100,31 @@ namespace VTuberSystemBase.OutputRendererShell.Display
             {
                 try
                 {
-                    _bridge.AssignCameraToDisplay(camera, requested, config.SpoutSenderName);
+                    // 物理ディスプレイ非依存で毎フレーム描画させるため、出力カメラの targetTexture を
+                    // 専用 RenderTexture に張り替える。targetDisplay=1（Display 2）+ Editor 単一ディスプレイや
+                    // standalone 物理 2 画面目なしの環境では、camera-capture 方式だとカメラが描画されず Spout が
+                    // 黒くなる。targetTexture を持たせると Display 表示状態に関係なくカメラがレンダリングされ、
+                    // その結果を RDS の Texture モード経由で Spout 送出できる。
+                    var rt = EnsureOutputRenderTexture(config.OutputResolution);
+                    camera.targetTexture = rt;
+                    _routedCamera = camera;
 
-                    // RDS 側 Assign が成功すれば camera.targetDisplay は RDS が設定する想定だが、
-                    // 念のため targetDisplay の妥当性を担保（RDS 内部仕様変更へのガード）。
-                    if (camera.targetDisplay != requested)
-                    {
-                        camera.targetDisplay = requested;
-                    }
+                    _bridge.AssignRenderTextureToDisplay(rt, requested);
 
                     effective = requested;
                     fallback = false;
                     diagMessage = string.IsNullOrEmpty(config.SpoutSenderName)
-                        ? null
-                        : $"RDS routing active with Spout sender '{config.SpoutSenderName}'.";
+                        ? $"RDS routing active via RenderTexture ({rt.width}x{rt.height}) Texture-mode Spout (display-independent)."
+                        : $"RDS routing active with Spout sender '{config.SpoutSenderName}' via RenderTexture ({rt.width}x{rt.height}, display-independent).";
 
                     _logger.Info(
-                        $"RDS routing applied: requested index={requested}, spoutSender='{config.SpoutSenderName ?? "<none>"}'.",
+                        $"RDS routing applied (RenderTexture {rt.width}x{rt.height}, display-independent): requested index={requested}, spoutSender='{config.SpoutSenderName ?? "<none>"}'.",
                         component: nameof(RuntimeDisplaySelectorRoutingService),
                         topic: "display-routing");
                 }
                 catch (Exception ex)
                 {
-                    diagMessage = $"RDS AssignCameraToDisplay threw {ex.GetType().Name}; falling back to direct Camera.targetDisplay assignment (requested index={requested}).";
+                    diagMessage = $"RDS AssignRenderTextureToDisplay threw {ex.GetType().Name}; falling back to direct Camera.targetDisplay assignment (requested index={requested}).";
                     _logger.Error(diagMessage, ex,
                         component: nameof(RuntimeDisplaySelectorRoutingService),
                         topic: "display-routing");
@@ -151,8 +161,65 @@ namespace VTuberSystemBase.OutputRendererShell.Display
         {
             if (_disposed) return;
             _disposed = true;
-            // RDS 本体のライフサイクル（_assigner / _senderStore 等）は RDS Facade の OnDestroy が
-            // 解放する。本アダプタは状態を保持しないため、追加 Dispose 処理は不要。
+            // 本サービスが所有する出力 RenderTexture を解放し、カメラの targetTexture を元（null）に戻す。
+            // RDS 本体のライフサイクル（_assigner / _senderStore 等）は RDS Facade の OnDestroy が解放する。
+            ReleaseOutputRenderTexture(_routedCamera);
+        }
+
+        /// <summary>
+        /// 指定解像度の出力用 RenderTexture を取得する（無ければ生成）。解像度が変わった場合は作り直す。
+        /// 各成分が 0 以下のときは既定 1920x1080 にフォールバックする。
+        /// </summary>
+        private RenderTexture EnsureOutputRenderTexture(Vector2Int resolution)
+        {
+            int w = resolution.x > 0 ? resolution.x : DefaultOutputWidth;
+            int h = resolution.y > 0 ? resolution.y : DefaultOutputHeight;
+
+            if (_outputRenderTexture != null
+                && (_outputRenderTexture.width != w || _outputRenderTexture.height != h))
+            {
+                ReleaseOutputRenderTexture(_routedCamera);
+            }
+
+            if (_outputRenderTexture == null)
+            {
+                _outputRenderTexture = new RenderTexture(w, h, 24, RenderTextureFormat.ARGB32)
+                {
+                    name = "VsbMainOutput_SpoutRT",
+                    hideFlags = HideFlags.HideAndDontSave,
+                };
+                _outputRenderTexture.Create();
+            }
+
+            return _outputRenderTexture;
+        }
+
+        /// <summary>
+        /// 所有する出力 RenderTexture を解放し、張り替えた <see cref="Camera.targetTexture"/> を null に戻す。
+        /// 他者が targetTexture を上書き済みの場合は触れない（上書き側の責務を尊重）。複数回呼んでも安全。
+        /// </summary>
+        private void ReleaseOutputRenderTexture(Camera? camera)
+        {
+            if (camera != null && _outputRenderTexture != null && camera.targetTexture == _outputRenderTexture)
+            {
+                camera.targetTexture = null;
+            }
+
+            if (_outputRenderTexture != null)
+            {
+                _outputRenderTexture.Release();
+                if (Application.isPlaying)
+                {
+                    UnityEngine.Object.Destroy(_outputRenderTexture);
+                }
+                else
+                {
+                    UnityEngine.Object.DestroyImmediate(_outputRenderTexture);
+                }
+                _outputRenderTexture = null;
+            }
+
+            _routedCamera = null;
         }
 
         /// <summary>
@@ -161,6 +228,10 @@ namespace VTuberSystemBase.OutputRendererShell.Display
         /// </summary>
         private int ApplyFallback(Camera camera, DisplayRoutingConfig config)
         {
+            // RT 経路から物理ディスプレイ経路へ降りるため、本サービスが張り替えた targetTexture を解除する
+            // （targetTexture が残っていると Camera.targetDisplay が無視されるため）。
+            ReleaseOutputRenderTexture(camera);
+
             int requested = config.TargetDisplayIndex;
             int displayCount = _probe.DisplayCount;
             int effective = (requested >= 0 && requested < displayCount) ? requested : 0;
@@ -191,6 +262,15 @@ namespace VTuberSystemBase.OutputRendererShell.Display
         /// <param name="displayIndex">論理ディスプレイ番号（0-based）。</param>
         /// <param name="spoutSenderName">Spout センダー名。null / 空文字列なら Spout 登録を行わない。</param>
         void AssignCameraToDisplay(Camera camera, int displayIndex, string? spoutSenderName);
+
+        /// <summary>
+        /// RDS Facade に対して <c>AssignRenderTextureToDisplay(renderTexture, displayIndex)</c> を呼び出す。
+        /// RDS は当該 RenderTexture を Texture モードで Spout 送出する（センダー名は SenderNamingPolicy 依存）。
+        /// 呼び出し側は別途カメラの <see cref="Camera.targetTexture"/> をこの RenderTexture に設定して描画させる。
+        /// </summary>
+        /// <param name="renderTexture">Spout 送出元となる RenderTexture。</param>
+        /// <param name="displayIndex">論理ディスプレイ番号（0-based）。</param>
+        void AssignRenderTextureToDisplay(RenderTexture renderTexture, int displayIndex);
     }
 
     /// <summary>
@@ -241,6 +321,21 @@ namespace VTuberSystemBase.OutputRendererShell.Display
             // 既定の AssignmentOptions は ViewportRect=null / BroadcastResolution=null。
             // 本サービスは Camera 全画面送出を前提とするため、追加オプションは使わない。
             facade.AssignCameraToDisplay(camera, displayIndex, Hidano.RuntimeDisplaySelector.AssignmentOptions.Default);
+        }
+
+        /// <inheritdoc />
+        public void AssignRenderTextureToDisplay(RenderTexture renderTexture, int displayIndex)
+        {
+            var facade = Hidano.RuntimeDisplaySelector.RuntimeDisplaySelector.Current;
+            if (facade == null)
+            {
+                throw new InvalidOperationException(
+                    "RuntimeDisplaySelector.Current is null. Ensure the RuntimeDisplaySelector Facade is placed in the scene and Awake has completed before invoking display routing.");
+            }
+
+            // RDS の Texture モード経路。SpoutSender が captureMethod=Texture でこの RT を送出する
+            // （センダー名は RDS の SenderNamingPolicy 依存 = RuntimeDisplaySelector_Display_{index}）。
+            facade.AssignRenderTextureToDisplay(renderTexture, displayIndex);
         }
     }
 }

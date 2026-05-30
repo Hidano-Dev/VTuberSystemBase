@@ -25,16 +25,31 @@ namespace VTuberSystemBase.OutputRendererShell.EditModeTests.Fakes
             }
         }
 
+        public readonly struct RenderTextureAssignCall
+        {
+            public RenderTexture RenderTexture { get; }
+            public int DisplayIndex { get; }
+            public RenderTextureAssignCall(RenderTexture renderTexture, int displayIndex)
+            {
+                RenderTexture = renderTexture;
+                DisplayIndex = displayIndex;
+            }
+        }
+
         private readonly List<AssignCall> _calls = new();
+        private readonly List<RenderTextureAssignCall> _renderTextureCalls = new();
 
         /// <summary>RDS Facade が利用可能かを偽装する。既定 <c>true</c>。</summary>
         public bool IsAvailable { get; set; } = true;
 
-        /// <summary>AssignCameraToDisplay 呼び出し時に投げる例外。null の場合は投げない。</summary>
+        /// <summary>AssignCameraToDisplay / AssignRenderTextureToDisplay 呼び出し時に投げる例外。null の場合は投げない。</summary>
         public Exception? ThrowOnAssign { get; set; }
 
         /// <summary>AssignCameraToDisplay 呼び出し履歴。</summary>
         public IReadOnlyList<AssignCall> Calls => _calls;
+
+        /// <summary>AssignRenderTextureToDisplay 呼び出し履歴。</summary>
+        public IReadOnlyList<RenderTextureAssignCall> RenderTextureCalls => _renderTextureCalls;
 
         public void AssignCameraToDisplay(Camera camera, int displayIndex, string? spoutSenderName)
         {
@@ -45,6 +60,16 @@ namespace VTuberSystemBase.OutputRendererShell.EditModeTests.Fakes
             }
             // RDS 既定挙動の模倣: targetDisplay を設定する。
             camera.targetDisplay = displayIndex;
+        }
+
+        public void AssignRenderTextureToDisplay(RenderTexture renderTexture, int displayIndex)
+        {
+            _renderTextureCalls.Add(new RenderTextureAssignCall(renderTexture, displayIndex));
+            if (ThrowOnAssign != null)
+            {
+                throw ThrowOnAssign;
+            }
+            // RDS は RenderTexture を Texture モードで Spout 送出する。カメラの targetTexture は呼び出し側が設定する。
         }
     }
 }

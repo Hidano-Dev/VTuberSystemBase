@@ -50,5 +50,22 @@ namespace VTuberSystemBase.OutputRendererShell.Abstractions
         /// </para>
         /// </remarks>
         public string? SpoutSenderName { get; init; }
+
+        /// <summary>
+        /// メイン出力カメラを描画する RenderTexture（= Spout 送出元）の解像度。既定 1920x1080。
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <see cref="RuntimeDisplaySelectorRoutingService"/> は出力カメラの <see cref="Camera.targetTexture"/> を
+        /// この解像度の RenderTexture に張り替えて「物理ディスプレイ非依存」で毎フレーム描画させ、その RT を
+        /// RuntimeDisplaySelector の Texture モード経由で Spout 送出する。これにより Editor（単一ディスプレイ）でも
+        /// standalone（物理 2 画面目なし）でも、Display の表示状態に依存せず OBS の Spout Source へ出力できる。
+        /// </para>
+        /// <para>
+        /// <c>BuiltInDisplayRoutingService</c> は本値を無視する（物理ディスプレイ振り分けのみ）。
+        /// 各成分が 0 以下の場合、実装側で安全な既定（1920x1080）にフォールバックする。
+        /// </para>
+        /// </remarks>
+        public Vector2Int OutputResolution { get; init; } = new Vector2Int(1920, 1080);
     }
 }

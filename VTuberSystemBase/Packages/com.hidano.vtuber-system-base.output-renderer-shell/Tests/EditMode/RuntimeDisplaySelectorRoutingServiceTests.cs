@@ -46,7 +46,7 @@ namespace VTuberSystemBase.OutputRendererShell.EditModeTests
         }
 
         [Test]
-        [Description("RDS が利用可能で Spout 名なし: AssignCameraToDisplay が期待引数で呼ばれ、IsFallbackActive=false")]
+        [Description("RDS が利用可能: AssignRenderTextureToDisplay が呼ばれ、カメラの targetTexture が張り替えられ、IsFallbackActive=false")]
         public void Activate_WhenRdsAvailable_NoSpout_CallsBridgeAndSucceeds()
         {
             var bridge = new FakeRuntimeDisplaySelectorBridge { IsAvailable = true };
@@ -60,18 +60,23 @@ namespace VTuberSystemBase.OutputRendererShell.EditModeTests
                 SpoutSenderName = null,
             });
 
-            Assert.AreEqual(1, bridge.Calls.Count);
-            Assert.AreSame(_camera, bridge.Calls[0].Camera);
-            Assert.AreEqual(1, bridge.Calls[0].DisplayIndex);
-            Assert.IsNull(bridge.Calls[0].SpoutSenderName);
+            Assert.AreEqual(0, bridge.Calls.Count, "RT 経路では camera-capture（AssignCameraToDisplay）は呼ばない");
+            Assert.AreEqual(1, bridge.RenderTextureCalls.Count);
+            Assert.AreEqual(1, bridge.RenderTextureCalls[0].DisplayIndex);
+            Assert.IsNotNull(bridge.RenderTextureCalls[0].RenderTexture);
             Assert.AreEqual(1, info.RequestedDisplayIndex);
             Assert.AreEqual(1, info.EffectiveDisplayIndex);
             Assert.IsFalse(info.IsFallbackActive);
-            Assert.AreEqual(1, _camera.targetDisplay);
+            Assert.IsNotNull(_camera.targetTexture, "出力カメラは RenderTexture に張り替えられる（ディスプレイ非依存描画）");
+            Assert.AreSame(bridge.RenderTextureCalls[0].RenderTexture, _camera.targetTexture,
+                "Spout 送出元 RT とカメラの描画先 RT は同一インスタンス");
+
+            sut.Dispose();
+            Assert.IsNull(_camera.targetTexture, "Dispose で targetTexture は元（null）に戻る");
         }
 
         [Test]
-        [Description("Spout 名指定時: AssignCameraToDisplay にセンダー名が伝播し、診断メッセージに反映される")]
+        [Description("Spout 名指定時: 診断メッセージにセンダー名が反映され、RT 経路で成功する")]
         public void Activate_WithSpoutSenderName_PropagatesNameToBridge()
         {
             var bridge = new FakeRuntimeDisplaySelectorBridge { IsAvailable = true };
@@ -85,11 +90,12 @@ namespace VTuberSystemBase.OutputRendererShell.EditModeTests
                 SpoutSenderName = "VTuberMainOutput",
             });
 
-            Assert.AreEqual(1, bridge.Calls.Count);
-            Assert.AreEqual("VTuberMainOutput", bridge.Calls[0].SpoutSenderName);
+            Assert.AreEqual(1, bridge.RenderTextureCalls.Count);
             Assert.IsFalse(info.IsFallbackActive);
             Assert.IsNotNull(info.DiagnosticMessage);
             StringAssert.Contains("VTuberMainOutput", info.DiagnosticMessage!);
+
+            sut.Dispose();
         }
 
         [Test]
@@ -130,7 +136,7 @@ namespace VTuberSystemBase.OutputRendererShell.EditModeTests
             var sut = new RuntimeDisplaySelectorRoutingService(_logger, bridge, probe);
 
             LogAssert.Expect(LogType.Error,
-                new System.Text.RegularExpressions.Regex("RDS AssignCameraToDisplay threw"));
+                new System.Text.RegularExpressions.Regex("RDS AssignRenderTextureToDisplay threw"));
 
             var info = sut.Activate(_camera, new DisplayRoutingConfig
             {
@@ -138,9 +144,10 @@ namespace VTuberSystemBase.OutputRendererShell.EditModeTests
                 SuppressEditorWarning = true,
             });
 
-            Assert.AreEqual(1, bridge.Calls.Count, "Assign は試行される（履歴は残る）");
+            Assert.AreEqual(1, bridge.RenderTextureCalls.Count, "RT Assign は試行される（履歴は残る）");
             Assert.IsTrue(info.IsFallbackActive);
             Assert.AreEqual(1, info.EffectiveDisplayIndex);
+            Assert.IsNull(_camera.targetTexture, "fallback では張り替えた targetTexture を解除して物理ディスプレイ経路に降りる");
             Assert.AreEqual(1, _camera.targetDisplay);
         }
 
