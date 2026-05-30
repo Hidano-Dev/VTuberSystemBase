@@ -45,7 +45,7 @@
 
 ## ◯ 次にやること（優先度順）
 
-1. **【本丸】Addressables 未ビルド問題**: アバター/ステージ catalog が空（`RuntimeData is null` / `Library/com.unity.addressables/aa/Windows/settings.json` 無効）。これが解決しないと本物のキャラ/ステージが OBS に出ない（現状テストキューブでしか可視化できない）。Addressables のコンテンツビルド手順確立が次の主目標。
+1. **【将来作業・当面スコープ外】Addressables コンテンツビルド**: アバター/ステージ catalog が空（`RuntimeData is null` / `Library/com.unity.addressables/aa/Windows/settings.json` 無効）。ただしこれは**設計上の想定内ログで graceful skip される**（Sample README §トラブルシュート「無視可・実害なし」）。Addressables ビルドが必要になるのは**実 avatar/stage prefab を IPC 経由で OBS に出す段階に入ったときのみ**。現フェーズ（Spout 出力経路の成立）では不要のため当面着手しない。
 2. **出力カメラの clearFlags 既定**: 現状 `SolidColor` 黒。VTuber 用途では Skybox かクロマキー色が妥当か検討（`DefaultCameraFactory`）。
 3. **`DisplayRoutingConfig.OutputResolution` の Inspector 公開**: 現状コード既定 1920x1080 のみ。`OutputSceneBootstrapper` に SerializeField を追加して可変にするか検討。
 4. RT 経路の standalone 実機確認（物理出力なし＋OBS Spout で実運用想定）。

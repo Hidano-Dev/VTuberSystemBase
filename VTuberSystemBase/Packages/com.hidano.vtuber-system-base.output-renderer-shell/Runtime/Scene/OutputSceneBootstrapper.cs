@@ -65,6 +65,10 @@ namespace VTuberSystemBase.OutputRendererShell.Scene
         [SerializeField]
         private string _spoutSenderName = string.Empty;
 
+        [Tooltip("メイン出力カメラを描画する RenderTexture（= Spout 送出元）の解像度。既定 1920x1080。各成分が 0 以下のときは安全な既定にフォールバックする。RuntimeDisplaySelector 選択時のみ参照される。")]
+        [SerializeField]
+        private Vector2Int _outputResolution = new Vector2Int(1920, 1080);
+
         [Header("Lifecycle")]
         [Tooltip("シーン開始時に自動的に起動シーケンスを実行する場合は ON。既定 ON。")]
         [SerializeField]
@@ -124,6 +128,9 @@ namespace VTuberSystemBase.OutputRendererShell.Scene
             FullScreenMode = _fullScreenMode,
             SuppressEditorWarning = _suppressEditorWarning,
             SpoutSenderName = string.IsNullOrEmpty(_spoutSenderName) ? null : _spoutSenderName,
+            OutputResolution = _outputResolution.x > 0 && _outputResolution.y > 0
+                ? _outputResolution
+                : new Vector2Int(1920, 1080),
         };
 
         /// <summary>
