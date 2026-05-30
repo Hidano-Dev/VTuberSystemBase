@@ -1,101 +1,89 @@
 # セッション引き継ぎノート
 
-VtsApiDebug（UI/IPC API 逐次実行・画面検証ツール）の **Phase5 OSC（§O-8）** を実装・PlayMode 往復検証・コミットしたセッション。前セッションが「偽成功の罠」で見送っていた OSC を、先に出力アダプタへ受信カウンタ診断を足すことで検証可能にしてから出荷した。
+VtsApiDebug（UI/IPC API 逐次実行・検証ツール）を拡張し、前セッション申し送りの P1/P2 を実装したセッション。Phase5 OSC 往復 → Stage 診断カウンタ修正 → request/response 往復復活 → ConnectionStatus バグ修正 → ツール UX 改善（メニュー移動・日本語化）→ MainDemo を RDS+Spout 出力経路に結線、まで完了。すべて「実証→本実装→PlayMode検証→コミット」で進めた。
 
 ## ◯ 今回やったこと
 
-- **出力アダプタへ OSC 受信カウンタ診断を追加**（commit `10b346c`, production 変更）: `CameraSwitcherOutputAdapter`（Domain）に `OscFramesReceived`/`OscFramesApplied`/`LastAppliedCameraId`/`LastAppliedAtUnixMs` と、設定上の受信先 `OscReceiveHost`/`OscReceivePort` を public 露出。`OnOscMessageReceived`（Unity main thread）でカウント、`_applier.Apply` が true のときのみ applied++。`CameraSwitcherOutputAdapterDiagnostics.Snapshot` に同フィールドを追加。**これが無いと UDP の偽成功（ポート不一致でも Send OK）を見抜けない** ＝ 前セッションが OSC を見送った根本理由を解消。
-- **Phase5 OSC 送信（§O-8）**（commit `50e3119`, Editor ツール）: `UiApiDebugHub.Osc.cs` 新規。UI 側 `UoscFlatRecordEmitter` + `Ucapi4UnityFlatRecordSerializer` を直接駆動し `/ucapi/camera/{id}/flat` へ UCAPI blob を UDP 送信。**emitter の送信先は推測せず `DumpCameraAdapter` が露出する実際の受信 host/port に必ず一致させる**（`EnsureOscEmitterStarted` が診断 snapshot から読む）。`DumpCameraAdapter` を新カウンタ表示に更新。Window に「O-8. OSC」グループ（Start/Send→Last/Stop）追加。asmdef に `VTuberSystemBase.CameraSwitcherTab.Runtime` 参照追加（uOSC + UCAPI4Unity DLL を間接導入）。
-- compile 0err/0warn。**camera-switcher-output-adapter PlayMode テスト 96/96 合格**（production 変更の非回帰確認）。
-- **おまけ: Stage 診断 handler count のリーク表示を修正**（commit `4bce442`, production）: 前セッションが「per-property ハンドラが RemoveLight で deregister されない疑い」とした件を調査 → **実ハンドラのリークは無く（`HandleRemove` で確実に Dispose 済み）、診断カウンタ `RegisteredHandlerCount` が remove/dispose で減算されないだけの「診断精度バグ」**と判明。`LightHandler` が増やした分を `_ownedHandlerCount` で追跡し remove/dispose で正確に戻す（カウンタは stage/volume/preview と共有のため 0 リセット不可）。テストに整合性アサート追加。
-- 計 4 コミット（main: `10b346c` / `50e3119` / `154d739` HANDOVER / `4bce442` Stage 修正）。
-
-## ◯ 検証結果（往復確認＝偽成功ではない）
-
-MainDemo・PlayMode で:
-1. `AddPerspectiveCamera` → `DumpCameraAdapter`: `Cameras=[cam-0001]`, `Osc=Running@127.0.0.1:9000`, カウンタ 0。
-2. `SendOscToLastCameraDemo`（送信成功表示）→ `DumpCameraAdapter`: `OscFramesReceived=1, OscFramesApplied=1, LastApplied=cam-0001`。
-3. もう一度送信 → `2 / 2`（決定性確認。1 送信 = +1 受信 +1 適用）。
-→ UDP が**実際に 127.0.0.1:9000 へ到達し、アドレス `/ucapi/camera/cam-0001/flat` を decode → cam-0001 へ route → UCAPI で apply 成功**。送信 OK 表示だけでなく出力側カウンタの読み戻しで往復を確認した。
-
-Stage 診断修正の検証: MainDemo・PlayMode で `DumpStageAdapter` の `Handlers` が AddDirectionalLight で 3→10、RemoveLastLight で 10→3 に戻る（修正前は 10 のまま）。EditMode（PlayMode 実行）テスト 102/102 合格（新アサート含む）。
+- **Phase5 OSC（§O-8）**（`10b346c` production / `50e3119` editor）: 出力アダプタに OSC 受信カウンタ診断（`OscFramesReceived/Applied`/`LastAppliedCameraId`/受信host/port）を追加し、UI 側 emitter+serializer で `/ucapi/camera/{id}/flat` へ送信。送信先ポートは診断から読んだ実受信ポートに一致させ偽成功を排除。検証: 送信2回で `0→1→2`、adapter テスト 96/96。
+- **Stage 診断 handler count 修正**（`4bce442` production）: 前セッションの「per-property ハンドラ deregister 漏れ疑い」を調査→**実ハンドラはリークせず、診断カウンタが remove/dispose で減算されないだけの精度バグ**と判明。`_ownedHandlerCount` で自分の寄与だけ正確に戻す（カウンタは stage/volume/preview と共有のため 0 リセット不可）。検証: PlayMode で 3→10→3、テスト 102/102。
+- **request/response 往復復活**（`72fc55e` production / `7a36120` editor）: `OutputSceneBootstrapper` が `responseSink:null` で Dispatcher 生成＝Dispatcher 経由 request の帰り道が切れていた件を結線。① core-ipc `CoreIpcRuntimeHost.SendEnvelope` ② output-renderer-shell `OutputCommandDispatcher.SetResponseSink` ③ integrated-demo で inbound bridge の隣に `SetResponseSink(host.SendEnvelope)`。検証: core-ipc 354/354・output-renderer-shell 76/76、PlayMode で camera volume schema が `overrideCount=20` で往復。
+- **ConnectionStatus 永久 Initializing バグ修正**（`f75ca3d` production）: `ConnectionStateChanged`（イベント、過去再生なし）だけ購読し latched `CurrentState` を読まず、購読前に完了した Connected 遷移を取りこぼし固着。購読直後に `CurrentState` を一度反映（Disconnected は Initializing grace 維持）。検証: contract 12/12、`DumpConnection` が `IsConnected=True, Connected`（旧 False/Initializing）。
+- **ツール UX 改善**（`ca3c809`）: メニューを `Tools/Hidano/VTuberSystem/Debug/VTS API Debug` へ移動。グループ名・ボタンラベルを日本語化、章記号（A/D/O 等＝逆引きドキュメント章番号）を UI から撤去しコード内 `// §X` コメントに退避。
+- **MainDemo を RDS+Spout 出力経路に結線**（`5af253c` editor / `c67c0a0` production scene）: 下記専用セクション参照。
 
 ## ◯ 決定事項
 
-- **検証スタンス（継続）**: 送信成否だけでなく**出力側診断の読み戻し**で往復を確認する。OSC は受信カウンタ（`OscFramesReceived/Applied`）が一次シグナル。受信先ポートは診断から読む（推測しない）＝偽成功を構造的に排除。
-- `SendOscToCamera` が組む CameraSnapshot は妥当値固定（rotation=identity, focal=50mm, sensor=36×24, near/far=0.3/1000, aperture=5.6, focus=10）。serializer のバリデーション（NaN/Inf, focal<=0, sensor<=0, near>=far, zero-quaternion）を全て通る。position だけ特徴値 (12.34, 5.67, -8.9)。
-- uloop 実行は従来通り: Unity プロジェクト直下から / `execute-dynamic-code --code '...'` は **シングルクォートで囲み中身は quote-free** / 文字列引数が要る操作は無引数の便利メソッド併設（`SendOscToLastCameraDemo` 等）。
+- **検証スタンス**: 送信成否だけでなく**出力側診断の読み戻し**で往復を確認する（OSC=受信カウンタ、request/response=実機能の往復、RDS=SpoutSender 数）。偽成功を構造的に排除。
+- **「実証→本実装」を徹底**: production 変更前に、production を触らない実証プローブ（VtsApiDebug 内）で挙動を確認してから本実装に入る。これでアーキ不確実性（loopback で response が返るか、Editor で Spout が立つか）を低リスクに潰した。
+- **production 変更とツール（editor）を別コミットに分離**。
+- **シーン編集は手書き YAML 禁止**。`SetupRdsOnCurrentScene()` のように Editor API（SerializedObject + EditorSceneManager.SaveScene）経由で行う。
+- uloop 運用は従来通り（プロジェクト直下から / `execute-dynamic-code` はシングルクォート＋中身 quote-free / 文字列引数が要る操作は無引数の便利メソッド併設）。
+
+## ◯ 捨てた選択肢と理由
+
+- **request/response を「アーキ変更が要る大仕事」と諦める案** → 却下。掘ったら設計はバス（`CoreIpcBus.InvokeRequestHandlerAsync`）に既に存在し、Dispatcher 経由の帰り道（responseSink）を繋ぐだけだった。前セッションの「要設計」判断は掘りが浅かった。
+- **出力側アダプタを `ICoreIpcBus.RegisterRequestHandler`（バス直結）に作り替える案** → 却下。既存アダプタ全書き換えになる。responseSink 結線なら既存コードを変えずに往復復活。
+- **ConnectionStatus でコンストラクタ冒頭に `CurrentState` を反映する案** → 却下。購読前に読むと read→subscribe 間の遷移を取りこぼす。**購読→読み取り**の順にしてレースを塞いだ。
+- **`CurrentState` を無条件反映する案** → 却下。初期値 Disconnected まで反映すると Initializing grace を壊し既存テストが落ちる。**Disconnected 以外のときだけ反映**。
+- **Display2 検証を「ボタン群ではできない、standalone必須」で片付ける案** → 却下。RDS+Spout が未結線だっただけで、結線すれば Editor PlayMode + OBS Spout で検証可能と判明。
+- **RDS prefab をパス文字列でロードする案** → 却下。uloop の二重引用符問題。素の GameObject + `AddComponent<RdsFacade>()` で回避。
 
 ## ◯ ハマりどころ
 
-- **Bash ツールは Git Bash**: `cd /d ...`（cmd 流）は失敗。`cd "D:/.../VTuberSystemBase"`（forward slash + quote）で。`head` パイプは権限で弾かれることがある。
-- **camera-switcher-output-adapter のテストは PlayMode（test-mode 2）**。`Tests.Runtime` asmdef は UnityEditor.TestRunner も参照するが EditMode では 0 件。`--filter-type 3 --filter-value VTuberSystemBase.CameraSwitcherOutputAdapter.Tests.Runtime`。
-- **emitter StartAsync は同期完結**（`Task.FromResult`）なので `.GetAwaiter().GetResult()` でデッドロックしない。
-- **`.uloop/tools.json`** が uloop コマンド実行で毎回書き換わる（sync 生成物）。コミットには含めない。
-- **`OscEmitterState` は Contracts 名前空間**（Contracts/Contracts.Results 両 using で解決）。emitter/serializer 具体型は `VTuberSystemBase.CameraSwitcherTab.Adapters.{Osc,Ucapi}`（Runtime asmdef）。
+- **`RequestResult<TResponse>` の成功値は `Response`**（`Value` ではない）。ジェネリック制約なしの `TResponse?` は値型ではそのまま `T` 扱い → `?.` 不可。
+- **`CoreIpcRuntime` は `VTuberSystemBase.CoreIpc.Core` 名前空間**（`.Lifecycle` ではない）。
+- **camera/stage アダプタのテストは PlayMode（test-mode 2）**。EditMode フィルタでは 0 件。
+- **Bash は Git Bash**。`cd /d`（cmd 流）失敗、`cd "D:/..."`（forward slash + quote）。`grep`/`head` パイプは権限で弾かれることがある→ Grep ツールを使う。
+- **compile すると domain reload で PlayMode が落ちる**。検証は「Play 入れ直し→settle 9s→ShellStatus 確認」。
+- **`.uloop/tools.json`** は uloop 実行で毎回書き換わる生成物。コミットに含めない。
+- **シーン保存は Edit モードのみ**（PlayMode 中は破棄）。`SetupRdsOnCurrentScene` は `Application.isPlaying` で拒否。
 
-## ◯ 学び（実システムの所見＝ツール不具合ではない）
+## ◯ 学び
 
-- **OSC 経路は健全**: バス→Dispatcher ブリッジ（bug#2 修正）に依存しない独立の UDP 経路。受信ホスト（`UoscReceiverHostAdapter.OnDataReceived`, Unity main thread）→ `OscMessageRouter` → `Ucapi4UnityFlatRecordApplier`（UCAPI DLL）が素直に通った。
-- **既知の環境エラー 7 件は不変**（Addressables 未ビルド系 ×6 + StageLighting VolumeManager 未初期化 ×1）。OSC 検証中も同じ 7 件のみで、本変更由来のエラーは 0。
-
-## ◯ request/response（往復）復活（commit `72fc55e` production / `7a36120` editor）
-
-前セッションが「OutputScene が `responseSink:null` で Dispatcher を生成するため往復しない」と申し送った件を**実証→本実装で解消**。
-
-- **調査の結論**: request/response 機構は完成済み。`CoreIpcBus.RegisterRequestHandler`+`InvokeRequestHandlerAsync` が request→handler→`_outbound` で response 送り返しを実装。切れていたのは **Dispatcher 経由で登録したときの帰り道（responseSink）だけ**。「繋いではいけない理由」は無く、`OutputSceneBootstrapper` のコメント「OnEnvelopeReceived は上流が繋ぐ契約」どおり、前セッションが inbound bridge（行き）だけ繋いで responseSink（帰り）を繋ぎ忘れた**やり残し**。
-- **実証**（production 触らず確証）: VtsApiDebug `ProbeBusRequestResponse`（バス直結 echo）が PlayMode で `resp='echo:ping' handlerHits=1` ＝ 同一プロセス loopback で往復成立を確認。よって「response を `_outbound` に流せば UI に返る」が確実と判明。
-- **結線（3パッケージ）**: ① core-ipc `CoreIpcRuntimeHost.SendEnvelope`（envelope を encode して bus と同じ outbound へ送る public API、`SubscribeAllInbound` の対）② output-renderer-shell `OutputCommandDispatcher.SetResponseSink`（生成後に後付け注入可能化）③ integrated-demo `IntegratedDemoBootstrap.EnsureBusToDispatcherBridge` で inbound bridge の隣に `dispatcher.SetResponseSink(host.SendEnvelope)`。
-- **検証**: core-ipc 354/354・output-renderer-shell 76/76（SetResponseSink 後付け/null化の新テスト含む）。PlayMode で `RequestVolumeMetadataOnLastCamera` → `OK overrideCount=20`（camera の volume schema が responseSink 経由で実際に往復）。
-- **二重応答リスク無し**: camera は Dispatcher 経由のみ登録（バスの subscriptions には未登録）。bridge は `HasHandlerFor` で絞って転送。
-- **注意**: SendEnvelope は **Dispatcher 経由の request handler 専用の応答路**。バス直結（`ICoreIpcBus.RegisterRequestHandler`）の handler はバス自身が応答するので SendEnvelope 不要（混同しないこと）。
-
-## ◯ MainDemo を RDS+Spout 出力経路に結線（commit `5af253c` editor / `c67c0a0` production scene）
-
-「Display1=UI / Display2=Skybox の本番想定出力を VtsApiDebug ボタン群で検証できない」という指摘から、原因が **RuntimeDisplaySelector（RDS）が実装・パッケージ導入済み（0.1.1）なのに MainDemo で未結線（RoutingProvider=BuiltIn のまま・Spout名空・Facade未配置）** だったと判明し、結線した。
-
-- **背景**: `OutputSceneBootstrapper._routingProvider` は既定 `BuiltIn`（`Display.Activate` ベース、Editor では no-op）。`RuntimeDisplaySelector` を選ぶと `RuntimeDisplaySelectorRoutingService` 経由で RDS Facade（`Hidano.RuntimeDisplaySelector.RuntimeDisplaySelector.Current`）に `AssignCameraToDisplay` し、Klak Spout（2.0.6 導入済み）で OBS 直送できる。BuiltIn/RDS は README で別配信形態として併記。
-- **実証（シーン非変更・OBS不要）**: VtsApiDebug `ProbeRdsSpoutToDisplay0/1` で PlayMode 中に RDS Facade を一時生成＋カメラを displayIndex 0/1 にアサイン → `Klak.Spout.SpoutSender` コンポーネント数が増えることで Spout 成立を確認。**displayIndex=1 でも成立**（Spout は仮想出力で物理ディスプレイ数=Editor制約に非依存）。
-- **本結線**: `VtsApiDebug.SetupRdsOnCurrentScene()`（Editor API、SerializedObject + EditorSceneManager.SaveScene、手書き YAML なし）で MainDemo に RDS Facade GameObject を配置＋`RoutingProvider=RuntimeDisplaySelector`＋`_spoutSenderName="VsbMainOutput"` に設定・保存。
-- **検証**: PlayMode で `DumpOutputScene` が `fallback=False, eff=1`（旧 `fallback=True, eff=0`）。起動時に `OutputSceneBootstrapper` が自動でメイン出力カメラを RDS 経由 Spout sender `RuntimeDisplaySelector_Display_1` にアサイン（SpoutSender 数=1）。Spout エラー 0。
-- **OBS 確認手順（人間）**: PlayMode 中、OBS の Spout Source で `RuntimeDisplaySelector_Display_1` を選べば Editor のまま Display2 相当（メイン出力）が見える。実 sender 名は RDS の `SenderNamingPolicy`（`RuntimeDisplaySelector_Display_{index}`）依存で、`_spoutSenderName` は経路有効化の意思表示＋診断用（`DefaultRuntimeDisplaySelectorBridge` は名前を直接使わない）。
-- **注意**: 物理マルチディスプレイ振り分けは依然 standalone のみ（`editorLimited=True` は情報フラグ）。Editor で見えるのは Spout 経由のみ。UI(Display1) は Game ビュー。
-
-## ◯ ConnectionStatus 永久 Initializing バグ修正（commit `f75ca3d` production）
-
-前セッションが「UI 再設計時対応予定」とした接続バッジ永久 Initializing バグを修正。`ConnectionStatus`（`ui-toolkit-shell/Runtime/Commands/ConnectionStatus.cs`）が `ConnectionStateChanged`（イベント、過去の遷移を再生しない）を購読するだけで latched な `CurrentState` を読んでおらず、購読より前に Connected まで進んでいた場合（loopback では一瞬）に遷移を取りこぼし `Initializing` に固着していた。送信パスは `UiCommandClient` が bus 診断を直接見るため無害＝**表示限定バグ**だった。修正は購読登録の直後に `CurrentState` を一度反映（subscribe→read 順でレース回避、`mapped==currentStatus` ガードが重複吸収）。Disconnected は未接続初期値と区別不能なため Initializing grace 維持。検証: contract テスト 12/12（新規 3 件）、ui-toolkit-shell 417 pass/1 既存 skip/0 fail、PlayMode で `DumpConnection` が `IsConnected=True, CurrentStatus=Connected`（旧 False/Initializing）。
+- **Spout は仮想出力なので物理ディスプレイ数（Editor の単一ディスプレイ制約）に非依存**。displayIndex=1 でも Editor PlayMode で `SpoutSender` が立つ。`Display.Activate` の Editor no-op 制約とは別物。
+- **送信パスは `ConnectionStatus` を経由しない**（`UiCommandClient` が bus 診断を直接見る）。だから ConnectionStatus バグは送信に無害＝表示限定だった。
+- **既知の環境エラー7件は不変**: Addressables 未ビルド系×6（`RuntimeData is null` が根本、本番ビルドで消える）+ StageLighting VolumeManager 起動タイミング×1。いずれも UI/ツール機能をブロックしない（全 Dump 正常動作）。
+- RDS/request-response とも「機構は完成、composition root での結線だけが未完」というパターンだった。「使われていない実装」は結線漏れを疑うべき。
 
 ## ◯ 次にやること（P2 申し送り、優先度順）
 
-1. **Addressables 未ビルド**で avatar/stage の可視検証素材が無い（catalog 空）。MainDemo は MoCap スロット 0 個で Character 往復は依然未観測（前セッションからの継続）。
-2. **stage/volume/preview ハンドラの diagnostics 減算は未確認**: 今回 LightHandler のみ修正。`VolumeOverrideHandler`/`StageHandler`/`PreviewCommandHandler` も `IncrementHandlerCount` で増やすが、それぞれの teardown で同様に減算しているかは未調査（同型の診断精度バグが残っている可能性、軽微）。
-3. 既存テスト失敗 `CoreIpcRuntimeHostTests.Initialize_TransitionsThroughInitializingToRunning`（本作業と無関係＝既存。ただし今回 core-ipc Editor テストは 354/354 全 pass だったので、現在は失敗していないか別アセンブリの可能性。要再確認）。
+1. **OBS 実機確認（人間）**: MainDemo を Play → OBS の Spout Source で `RuntimeDisplaySelector_Display_1` を選び、メイン出力（Skybox+キャラ+ライト+カメラ）が映るか目視。UI(Display1) は Game ビュー。物理2画面振り分けは standalone ビルドでのみ。
+2. **stage/volume/preview ハンドラの diagnostics 減算未確認**: 今回 LightHandler のみ修正。`VolumeOverrideHandler`/`StageHandler`/`PreviewCommandHandler` も `IncrementHandlerCount` するが teardown で減算しているか未調査（同型の精度バグの可能性、軽微）。
+3. **Addressables 未ビルド**で avatar/stage の可視検証素材が無い（catalog 空）。MainDemo は MoCap スロット 0 個で Character 往復は依然未観測。
+4. 既存テスト `CoreIpcRuntimeHostTests.Initialize_TransitionsThroughInitializingToRunning`（前セッション「失敗」と申し送り。ただし今回 core-ipc Editor 354/354 全 pass。現在は失敗していないか別アセンブリの可能性、要再確認）。
+
+## ◯ MainDemo RDS+Spout 結線（詳細）
+
+- **背景**: `OutputSceneBootstrapper._routingProvider` 既定 `BuiltIn`（`Display.Activate`、Editor で no-op）。RDS（`com.hidano.runtime-display-selector` 0.1.1）+ Klak Spout（2.0.6）導入済みだが MainDemo 未結線（Provider=BuiltIn・Spout名空・Facade未配置）だった。
+- **結線内容**: RDS Facade GameObject 配置 + `RoutingProvider=RuntimeDisplaySelector` + `_spoutSenderName="VsbMainOutput"`。
+- **挙動**: 起動時 `OutputSceneBootstrapper` → `RuntimeDisplaySelectorRoutingService` → RDS Facade `AssignCameraToDisplay(camera, 1)` → Klak `SpoutSender` 生成。実 sender 名は RDS `SenderNamingPolicy` 依存（`RuntimeDisplaySelector_Display_1`）。`_spoutSenderName` は経路有効化の意思表示＋診断用（`DefaultRuntimeDisplaySelectorBridge` は名前を直接使わない）。
+- **検証値**: `DumpOutputScene` = `fallback=False, eff=1`（旧 True/0）、SpoutSender 数=1、Spout エラー 0。
 
 ## ◯ 関連ファイル
 
-### 今回追加/変更
-- `VTuberSystemBase/Packages/com.hidano.vtuber-system-base.camera-switcher-output-adapter/Runtime/Domain/CameraSwitcherOutputAdapter.cs`（受信カウンタ追加, production）
-- `VTuberSystemBase/Packages/com.hidano.vtuber-system-base.camera-switcher-output-adapter/Runtime/Diagnostics/CameraSwitcherOutputAdapterDiagnostics.cs`（Snapshot 拡張, production）
-- `VTuberSystemBase/Assets/DevTools/UiApiDebug/UiApiDebugHub.Osc.cs`（新規, §O-8）
-- `VTuberSystemBase/Assets/DevTools/UiApiDebug/UiApiDebugHub.Camera.cs`（DumpCameraAdapter 更新）
-- `VTuberSystemBase/Assets/DevTools/UiApiDebug/UiApiDebugWindow.cs`（O-8 グループ登録）
-- `VTuberSystemBase/Assets/DevTools/UiApiDebug/VtsApiDebug.asmdef`（CameraSwitcherTab.Runtime 参照追加）
-- `VTuberSystemBase/Packages/com.hidano.vtuber-system-base.stage-lighting-volume-output-adapter/Runtime/Lights/LightHandler.cs`（診断 handler count 減算修正, production）
-- `VTuberSystemBase/Packages/com.hidano.vtuber-system-base.stage-lighting-volume-output-adapter/Tests/Editor/LightHandlerTests.cs`（整合性アサート追加）
-- `VTuberSystemBase/Packages/com.hidano.vtuber-system-base.core-ipc-foundation/Runtime/Core/CoreIpcRuntimeHost.cs`（`SendEnvelope` 追加, production）
-- `VTuberSystemBase/Packages/com.hidano.vtuber-system-base.output-renderer-shell/Runtime/Dispatch/OutputCommandDispatcher.cs`（`SetResponseSink` 追加, production）
-- `VTuberSystemBase/Packages/com.hidano.vtuber-system-base.output-renderer-shell/Tests/EditMode/OutputCommandDispatcherTests.cs`（SetResponseSink テスト追加）
-- `VTuberSystemBase/Packages/com.hidano.vtuber-system-base.integrated-demo/Runtime/IntegratedDemoBootstrap.cs`（responseSink 結線, production）
-- `VTuberSystemBase/Assets/DevTools/UiApiDebug/UiApiDebugHub.RequestProbe.cs`（新規, 往復プローブ 2 種）
-- `VTuberSystemBase/Packages/com.hidano.vtuber-system-base.ui-toolkit-shell/Runtime/Commands/ConnectionStatus.cs`（latched 状態反映, production）
-- `VTuberSystemBase/Packages/com.hidano.vtuber-system-base.ui-toolkit-shell/Tests/Runtime/ConnectionStatusContractTests.cs`（latched 反映テスト追加）
+### production（今回変更）
+- `Packages/com.hidano.vtuber-system-base.camera-switcher-output-adapter/Runtime/Domain/CameraSwitcherOutputAdapter.cs`（OSC 受信カウンタ）
+- `.../camera-switcher-output-adapter/Runtime/Diagnostics/CameraSwitcherOutputAdapterDiagnostics.cs`（Snapshot 拡張）
+- `Packages/com.hidano.vtuber-system-base.stage-lighting-volume-output-adapter/Runtime/Lights/LightHandler.cs`（診断 handler count 減算）
+- `Packages/com.hidano.vtuber-system-base.core-ipc-foundation/Runtime/Core/CoreIpcRuntimeHost.cs`（`SendEnvelope`）
+- `Packages/com.hidano.vtuber-system-base.output-renderer-shell/Runtime/Dispatch/OutputCommandDispatcher.cs`（`SetResponseSink`）
+- `Packages/com.hidano.vtuber-system-base.integrated-demo/Runtime/IntegratedDemoBootstrap.cs`（responseSink 結線）
+- `Packages/com.hidano.vtuber-system-base.ui-toolkit-shell/Runtime/Commands/ConnectionStatus.cs`（latched 反映）
+- `Assets/Samples/.../Integrated Demo Scene Walkthrough/MainDemo.unity`（RDS+Spout 結線）
 
-### 再利用した送信部品（変更なし）
-- `camera-switcher-tab/Runtime/Adapters/Osc/UoscFlatRecordEmitter.cs`
-- `camera-switcher-tab/Runtime/Adapters/Ucapi/Ucapi4UnityFlatRecordSerializer.cs`
-- `camera-switcher-tab/Runtime/Contracts/{CameraSnapshot,OscAddressBuilder,CameraId,UcapiFlatRecord}.cs` / `Contracts/Results/{OscEmitResult,SerializeResult}.cs`
+### editor ツール（VtsApiDebug、Editor 専用）
+- `Assets/DevTools/UiApiDebug/UiApiDebugHub.Osc.cs`（§O-8 OSC 送信）
+- `Assets/DevTools/UiApiDebug/UiApiDebugHub.RequestProbe.cs`（往復プローブ 2 種）
+- `Assets/DevTools/UiApiDebug/UiApiDebugHub.Rds.cs`（RDS/Spout プローブ + `SetupRdsOnCurrentScene`）
+- `Assets/DevTools/UiApiDebug/UiApiDebugWindow.cs`（メニュー移動・日本語化・全ボタン登録）
+- `Assets/DevTools/UiApiDebug/VtsApiDebug.asmdef`（CameraSwitcherTab.Runtime / Hidano.RuntimeDisplaySelector / Klak.Spout.Runtime 参照追加）
+
+### テスト（今回追加）
+- `.../output-renderer-shell/Tests/EditMode/OutputCommandDispatcherTests.cs`（SetResponseSink）
+- `.../ui-toolkit-shell/Tests/Runtime/ConnectionStatusContractTests.cs`（latched 反映）
+- `.../stage-lighting-volume-output-adapter/Tests/Editor/LightHandlerTests.cs`（カウンタ整合）
 
 ### 環境
-- Unity Editor `6000.3.10f1`（`D:\UnityEditors\6000.3.10f1\Editor\Unity.exe`）。プロジェクトルート: `D:\Personal\Repositries\VTuberSystemBase\VTuberSystemBase`。
-- uloop CLI（グローバル）。検証用シーン: `Assets/Samples/VTuberSystemBase Integrated Demo/0.1.0/Integrated Demo Scene Walkthrough/MainDemo.unity`。
-- 逆引きリファレンス: `docs/ui-api-reference.md`。
+- Unity Editor `6000.3.10f1`。プロジェクトルート: `D:\Personal\Repositries\VTuberSystemBase\VTuberSystemBase`。
+- 検証シーン: `Assets/Samples/VTuberSystemBase Integrated Demo/0.1.0/Integrated Demo Scene Walkthrough/MainDemo.unity`。
+- 逆引きリファレンス: `docs/ui-api-reference.md`。RDS: `Library/PackageCache/com.hidano.runtime-display-selector@.../`。
