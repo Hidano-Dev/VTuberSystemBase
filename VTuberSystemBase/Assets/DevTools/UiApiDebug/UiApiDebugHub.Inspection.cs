@@ -5,7 +5,7 @@ using System.Text;
 namespace VtsApiDebug
 {
     /// <summary>
-    /// Phase2 Inspection: docs/ui-api-reference.md §B/C/E/F/H/K/L の「読み取り専用」診断ダンプ。
+    /// 読み取り専用の診断ダンプ群（docs/ui-api-reference.md §B/C/E/F/H/K/L 対応）。
     /// IPC コマンド経路に依存しない（送信しない）ため低リスクで、シェル / 出力シーン / 各アダプタの
     /// 現在状態をその場で同期読み取りして 1 行サマリで返す。
     ///
@@ -166,7 +166,7 @@ namespace VtsApiDebug
 
         // ===== まとめ（uloop からの 1 発取得用） ================================
 
-        /// <summary>Phase2 の全 Inspection を順に実行して結合した結果を返す。</summary>
+        /// <summary>この診断グループの全項目を順に実行して結合した結果を返す。</summary>
         public static string DumpAllDiagnostics()
         {
             var lines = new[]

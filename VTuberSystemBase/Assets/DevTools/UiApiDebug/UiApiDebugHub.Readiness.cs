@@ -6,9 +6,10 @@ namespace VtsApiDebug
     /// 副作用なし・ログなしのライブ状態クエリ群。各 partial が持つ追跡フィールド
     /// （直近カメラ・購読フラグ・OSC emitter 等）を読むだけで、IPC 送信や Console ログは伴わない。
     ///
-    /// ホバー中の 1 ボタン分しか評価しないことを前提にしているため、
-    /// <see cref="HasAnyCamera"/> のように出力アダプタ診断を引く（FindAnyObjectByType を含む）
-    /// 重めのクエリも許容している。全ボタンを毎フレーム評価する用途には使わないこと。
+    /// <see cref="HasAnyCamera"/> は出力アダプタ診断を引く（FindAnyObjectByType を含む）ため安くない。
+    /// ボタン色分けで全ボタンを毎フレーム評価するときは、
+    /// <see cref="BeginReadinessSnapshot"/>〜<see cref="EndReadinessSnapshot"/> で囲み、
+    /// 重い検索を 1 フレーム 1 回に畳んでから評価すること。
     /// </summary>
     public static partial class UiApiDebugHub
     {

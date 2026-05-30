@@ -160,8 +160,35 @@ namespace VtsApiDebug
         private static UiSubscriptionClient? Sub() => ActiveShell()?.SubscriptionClient;
 
         /// <summary>検証用にシーン上の統合 Bootstrap（出力アダプタ診断の入口）を取得。</summary>
+        /// <remarks>
+        /// <see cref="FindAnyObjectByType"/> は安くないので、全ボタンの readiness を毎フレーム評価する
+        /// ボタン色分け（<see cref="UiApiDebugWindow"/>）のために、評価バッチの間だけ結果をキャッシュできる。
+        /// <see cref="BeginReadinessSnapshot"/>〜<see cref="EndReadinessSnapshot"/> の外では常に都度検索する。
+        /// </remarks>
         private static IntegratedDemoBootstrap? Demo()
-            => UnityEngine.Object.FindAnyObjectByType<IntegratedDemoBootstrap>();
+            => _demoSnapshotActive ? _demoSnapshot : UnityEngine.Object.FindAnyObjectByType<IntegratedDemoBootstrap>();
+
+        // ボタン色分けの 1 フレーム分の評価で Demo() を何度も引かないための短命キャッシュ。
+        private static IntegratedDemoBootstrap? _demoSnapshot;
+        private static bool _demoSnapshotActive;
+
+        /// <summary>
+        /// この呼び出しから <see cref="EndReadinessSnapshot"/> までの間、<see cref="Demo()"/> の結果を 1 回の
+        /// 検索結果に固定する。全ボタンの readiness を一括評価するときに、重い検索の重複を避けるために使う。
+        /// 評価は同期的に完了するので、その間にシーン上の Bootstrap が増減しない前提で安全。
+        /// </summary>
+        internal static void BeginReadinessSnapshot()
+        {
+            _demoSnapshot = UnityEngine.Object.FindAnyObjectByType<IntegratedDemoBootstrap>();
+            _demoSnapshotActive = true;
+        }
+
+        /// <summary><see cref="BeginReadinessSnapshot"/> で張ったキャッシュを破棄し、都度検索に戻す。</summary>
+        internal static void EndReadinessSnapshot()
+        {
+            _demoSnapshotActive = false;
+            _demoSnapshot = null;
+        }
 
         private static bool RequirePlayMode(out string message)
         {

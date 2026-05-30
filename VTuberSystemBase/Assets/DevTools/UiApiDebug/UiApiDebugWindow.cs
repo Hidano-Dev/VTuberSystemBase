@@ -65,6 +65,14 @@ namespace VtsApiDebug
         // 押すと処理が走る動作ボタン（「〜を起動」「〜を追加」等）と一目で区別できるようにする。
         //
         // 各グループ末尾の // §X は逆引きリファレンス docs/ui-api-reference.md の章対応（UI には出さない）。
+
+        // 読み取り専用ボタン（「〜を表示」）共通の readiness。いつでも実行可。
+        // メソッドではなくフィールドにしているのは、ボタン色分けで「このボタンは読み取り専用か」を
+        // ReferenceEquals で判定するため（同一インスタンスを全 Actions が共有する）。
+        // Actions 初期化子から参照されるので、必ず Actions より前に宣言する（static フィールドの初期化順）。
+        private static readonly Func<(ActionReadiness state, string note)> RdAlways =
+            () => (ActionReadiness.Ready, "読み取り専用。いつでも実行できます");
+
         private static readonly DebugAction[] Actions =
         {
             // §A
@@ -97,7 +105,7 @@ namespace VtsApiDebug
 
             // §B/C/E/F/H/K/L（読み取り専用の診断ダンプ）
             new DebugAction("診断（読み取り専用）", "全診断を表示",
-                "Phase2 の全 Inspection（シェル構成〜各アダプタ）を順に実行し、結合した結果を返す。", UiApiDebugHub.DumpAllDiagnostics, RdAlways),
+                "この「診断（読み取り専用）」グループの各項目（シェル構成〜各アダプタ）を順に実行し、結合した結果を返す。", UiApiDebugHub.DumpAllDiagnostics, RdAlways),
             new DebugAction("診断（読み取り専用）", "シェル設定を表示",
                 "UI シェル構成（SkinProfile / 表示先 / バス / スキン UXML 資産）を読む。", UiApiDebugHub.DumpShellConfig, RdAlways),
             new DebugAction("診断（読み取り専用）", "スキン検証結果を表示",
@@ -223,6 +231,13 @@ namespace VtsApiDebug
         private const float SplitterThickness = 6f;
         private const float DescriptionBoxHeight = 96f; // 約 5 行ぶん（ホバーで高さが変わらないよう固定）。
 
+        // ボタンの色分け（GUI.backgroundColor で素の Button を着色）。
+        // 今すぐ押して効果がある動作ボタン＝黄ハイライト。前提不足・no-op の動作ボタン＝減光。
+        // モード違いで不可の動作ボタンは GUI.enabled=false（Unity 既定のグレーアウト）。
+        // 読み取り専用（「〜を表示」）は着色しない＝いつ押しても安全な既定色。
+        private static readonly Color ReadyActionColor = new Color(1f, 0.82f, 0.3f);
+        private static readonly Color DimColor = new Color(0.45f, 0.45f, 0.45f, 1f);
+
         private Vector2 _buttonScroll;
         private Vector2 _resultScroll;
         private string _lastResult = "(まだ何も実行していません)";
@@ -275,31 +290,77 @@ namespace VtsApiDebug
             // 説明パネル（シェル状態の直下に配置・固定高）。ホバー中ボタンの効能と、今押して効果があるかを表示。
             DrawDescriptionPanel();
 
+            // ボタン色分けの凡例。
+            DrawButtonColorLegend();
+
             // ボタン一覧（残りの縦スペースを占有）。
+            // 各ボタンは現在の readiness で色分けする（凡例は下の DrawButtonColorLegend を参照）:
+            //   ・読み取り専用（「〜を表示」） … 既定色のまま。いつ押しても安全。
+            //   ・動作ボタンで今すぐ実行可     … 黄色ハイライト。押せば効果がある。
+            //   ・前提不足／押しても変化なし   … 減光。押せるが今は意味が薄い。
+            //   ・モード違いで実行不可         … グレーアウト（無効化）。今は押せない。
+            // 全ボタンを毎フレーム評価するので、重い Demo() 検索は 1 フレーム 1 回に畳む。
             int hoveredThisFrame = -1;
             _buttonScroll = EditorGUILayout.BeginScrollView(_buttonScroll, GUILayout.ExpandHeight(true));
             string? currentGroup = null;
-            for (int i = 0; i < Actions.Length; i++)
+            UiApiDebugHub.BeginReadinessSnapshot();
+            try
             {
-                var action = Actions[i];
-                if (action.Group != currentGroup)
+                for (int i = 0; i < Actions.Length; i++)
                 {
-                    currentGroup = action.Group;
-                    GUILayout.Space(6f);
-                    EditorGUILayout.LabelField(currentGroup, EditorStyles.boldLabel);
-                }
+                    var action = Actions[i];
+                    if (action.Group != currentGroup)
+                    {
+                        currentGroup = action.Group;
+                        GUILayout.Space(6f);
+                        EditorGUILayout.LabelField(currentGroup, EditorStyles.boldLabel);
+                    }
 
-                if (GUILayout.Button(action.Label))
-                {
-                    Execute(action);
-                }
+                    bool readOnly = ReferenceEquals(action.Readiness, RdAlways);
+                    var (state, _) = action.EvaluateReadiness();
 
-                // ホバー判定は Repaint 時のみ有効な実座標で行う（スクロールビュー内のローカル座標系）。
-                if (Event.current.type == EventType.Repaint
-                    && GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
-                {
-                    hoveredThisFrame = i;
+                    var prevBg = GUI.backgroundColor;
+                    bool prevEnabled = GUI.enabled;
+                    // 読み取り専用は既定色のまま。動作ボタンだけ実行可否で色を変える。
+                    if (!readOnly)
+                    {
+                        switch (state)
+                        {
+                            case ActionReadiness.Ready:
+                                GUI.backgroundColor = ReadyActionColor;
+                                break;
+                            case ActionReadiness.Caution:
+                                GUI.backgroundColor = DimColor;
+                                break;
+                            default: // Blocked: モード違い等で今は押せない → 無効化してグレーアウト
+                                GUI.enabled = false;
+                                break;
+                        }
+                    }
+
+                    bool pressed = GUILayout.Button(action.Label);
+
+                    GUI.backgroundColor = prevBg;
+                    GUI.enabled = prevEnabled;
+
+                    if (pressed)
+                    {
+                        Execute(action);
+                    }
+
+                    // ホバー判定は Repaint 時のみ有効な実座標で行う（スクロールビュー内のローカル座標系）。
+                    // GUI.enabled を戻した後でもレイアウト矩形は不変なので、無効化ボタンにカーソルを
+                    // 乗せても説明パネルに「現在: …（理由）」を表示できる。
+                    if (Event.current.type == EventType.Repaint
+                        && GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    {
+                        hoveredThisFrame = i;
+                    }
                 }
+            }
+            finally
+            {
+                UiApiDebugHub.EndReadinessSnapshot();
             }
             EditorGUILayout.EndScrollView();
 
@@ -398,6 +459,25 @@ namespace VtsApiDebug
             }
         }
 
+        /// <summary>ボタンの色分けが何を意味するかを 1 行で示す凡例。</summary>
+        private void DrawButtonColorLegend()
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                var prev = GUI.contentColor;
+                EditorGUILayout.LabelField("ボタン色:", GUILayout.Width(52f));
+
+                GUI.contentColor = ReadyActionColor;
+                EditorGUILayout.LabelField("■ 今すぐ実行可", GUILayout.Width(96f));
+
+                GUI.contentColor = new Color(0.6f, 0.6f, 0.6f);
+                EditorGUILayout.LabelField("■ 前提不足/変化なし", GUILayout.Width(124f));
+
+                GUI.contentColor = prev;
+                EditorGUILayout.LabelField("□ グレーアウト=不可 / 既定色=読み取り専用");
+            }
+        }
+
         /// <summary>結果欄の上に置く、縦サイズ変更用のドラッグハンドル。</summary>
         private void DrawResultSplitter()
         {
@@ -460,9 +540,6 @@ namespace VtsApiDebug
         // ===== 実行可否（readiness）の評価ヘルパ ==================================
         // Blocked(赤)=モード違いなどで今は不可 / Caution(黄)=前提不足だが別ボタンで準備可 / Ready(緑)=実行可。
         // 評価対象はホバー中の 1 ボタンのみなので、多少重いクエリ（カメラ有無など）を含んでよい。
-
-        private static (ActionReadiness, string) RdAlways()
-            => (ActionReadiness.Ready, "読み取り専用。いつでも実行できます");
 
         private static (ActionReadiness, string) RdPlay()
             => Application.isPlaying
