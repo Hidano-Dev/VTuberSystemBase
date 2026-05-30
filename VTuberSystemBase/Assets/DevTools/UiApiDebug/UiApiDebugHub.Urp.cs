@@ -160,48 +160,5 @@ namespace VtsApiDebug
                 $"現在の有効パイプライン型={(effective != null ? effective.GetType().Name : "null")}。" +
                 $"候補一覧:{sb}\nPlayMode で currentRenderPipeline 非null と描画を確認してください。");
         }
-
-        /// <summary>
-        /// 本セッションでプログラム生成した不完全な URP アセット（<c>Assets/Settings/Vsb*</c>）を削除し、
-        /// それが <see cref="GraphicsSettings.defaultRenderPipeline"/> に割り当たっていれば null に戻す。
-        /// Edit モード専用。冪等。
-        /// </summary>
-        public static string CleanupGeneratedUrpAssets()
-        {
-            if (Application.isPlaying)
-                return Report("CleanupGeneratedUrpAssets", false, "Edit モードで実行してください。");
-
-            var sb = new StringBuilder();
-
-            // 不完全アセットが既定パイプラインに割り当たっていれば外す。
-            if (GraphicsSettings.defaultRenderPipeline is UniversalRenderPipelineAsset cur
-                && cur.name.IndexOf("Vsb", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                GraphicsSettings.defaultRenderPipeline = null;
-                sb.Append("\n  defaultRenderPipeline を null（Built-in）に戻しました。");
-            }
-
-            string[] paths =
-            {
-                "Assets/Settings/VsbUniversalRenderPipelineAsset.asset",
-                "Assets/Settings/VsbUniversalRenderer.asset",
-            };
-            foreach (var p in paths)
-            {
-                if (AssetDatabase.LoadAssetAtPath<ScriptableObject>(p) != null)
-                {
-                    var ok = AssetDatabase.DeleteAsset(p);
-                    sb.Append($"\n  {(ok ? "削除" : "削除失敗")}: {p}");
-                }
-                else
-                {
-                    sb.Append($"\n  既に無し: {p}");
-                }
-            }
-
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
-            return Report("CleanupGeneratedUrpAssets", true, $"後始末完了:{sb}");
-        }
     }
 }

@@ -206,8 +206,6 @@ namespace VtsApiDebug
                 "現在の有効レンダーパイプライン状態をダンプ（読み取り専用）。null は Built-in RP フォールバックで出力が黒くなる原因。", UiApiDebugHub.DumpRenderPipeline, RdAlways),
             new DebugAction("URP 設定", "プロジェクトのURPアセットを割当",
                 "プロジェクト内の正規 URP アセットを既定パイプラインに割り当てる（不完全な Vsb* は除外。候補 0/複数件なら割り当てない）。Edit モード専用。", UiApiDebugHub.AssignUrpAssetFromProject, RdEdit),
-            new DebugAction("URP 設定", "生成した不完全URPアセットを後始末",
-                "本セッションでプログラム生成した不完全 URP アセット（Assets/Settings/Vsb*）を削除し、割当も null（Built-in）に戻す。Edit モード専用・冪等。", UiApiDebugHub.CleanupGeneratedUrpAssets, RdEdit),
 
             // Spout 出力の目視検証（PlayMode 中）。
             new DebugAction("Spout 検証", "テスト用コンテンツを注入（Skybox＋キューブ）",

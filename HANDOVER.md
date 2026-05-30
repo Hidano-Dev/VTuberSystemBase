@@ -63,7 +63,7 @@
 - `Packages/.../output-renderer-shell/Tests/EditMode/Fakes/FakeRuntimeDisplaySelectorBridge.cs`
 
 ### Editor ツール（VtsApiDebug、Editor 専用）
-- `Assets/DevTools/UiApiDebug/UiApiDebugHub.Urp.cs`（`AssignUrpAssetFromProject` / `CleanupGeneratedUrpAssets` / `DumpRenderPipeline` / `InjectSpoutTestContent` / `RemoveSpoutTestContent`）
+- `Assets/DevTools/UiApiDebug/UiApiDebugHub.Urp.cs`（`AssignUrpAssetFromProject` / `DumpRenderPipeline` / `InjectSpoutTestContent` / `RemoveSpoutTestContent`）
 - `Assets/DevTools/UiApiDebug/UiApiDebugWindow.cs`（URP 設定・Spout 検証ボタン）
 - `Assets/DevTools/UiApiDebug/VtsApiDebug.asmdef`（`Unity.RenderPipelines.Universal.Runtime` 参照追加）
 
