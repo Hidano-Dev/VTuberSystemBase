@@ -111,6 +111,11 @@ namespace VtsApiDebug
             new DebugAction("URP 設定", "プロジェクトのURPアセットを割当", UiApiDebugHub.AssignUrpAssetFromProject),
             new DebugAction("URP 設定", "生成した不完全URPアセットを後始末", UiApiDebugHub.CleanupGeneratedUrpAssets),
 
+            // Spout 出力の目視検証（PlayMode 中）。Play しただけだと黒（コンテンツ無し＋黒クリア）なので、
+            // 映すものを一時注入して OBS の RuntimeDisplaySelector_Display_1 に出るか確認する。
+            new DebugAction("Spout 検証", "テスト用コンテンツ注入（Skybox＋キューブ）", UiApiDebugHub.InjectSpoutTestContent),
+            new DebugAction("Spout 検証", "テスト用コンテンツ削除", UiApiDebugHub.RemoveSpoutTestContent),
+
             // RDS+Spout 出力経路の実証（シーン非変更・OBS 不要。SpoutSender 数で成立判定）
             new DebugAction("RDS/Spout 検証", "RDS Spout検証 → Display1", UiApiDebugHub.ProbeRdsSpoutToDisplay1),
             new DebugAction("RDS/Spout 検証", "RDS Spout検証 → Display0", UiApiDebugHub.ProbeRdsSpoutToDisplay0),
