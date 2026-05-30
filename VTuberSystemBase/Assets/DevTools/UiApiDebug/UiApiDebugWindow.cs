@@ -105,6 +105,12 @@ namespace VtsApiDebug
             new DebugAction("リクエスト/レスポンス", "直近カメラのVolume schemaを要求", UiApiDebugHub.RequestVolumeMetadataOnLastCamera),
             new DebugAction("リクエスト/レスポンス", "Volume schema結果", UiApiDebugHub.DumpVolumeMetaResult),
 
+            // URP（描画パイプライン）。未割当だと Built-in にフォールバックしメイン出力が黒くなる。
+            // URP アセットは Editor の Create>Rendering>URP Asset で正規生成し、下のボタンで割り当てる。
+            new DebugAction("URP 設定", "描画パイプライン状態", UiApiDebugHub.DumpRenderPipeline),
+            new DebugAction("URP 設定", "プロジェクトのURPアセットを割当", UiApiDebugHub.AssignUrpAssetFromProject),
+            new DebugAction("URP 設定", "生成した不完全URPアセットを後始末", UiApiDebugHub.CleanupGeneratedUrpAssets),
+
             // RDS+Spout 出力経路の実証（シーン非変更・OBS 不要。SpoutSender 数で成立判定）
             new DebugAction("RDS/Spout 検証", "RDS Spout検証 → Display1", UiApiDebugHub.ProbeRdsSpoutToDisplay1),
             new DebugAction("RDS/Spout 検証", "RDS Spout検証 → Display0", UiApiDebugHub.ProbeRdsSpoutToDisplay0),
