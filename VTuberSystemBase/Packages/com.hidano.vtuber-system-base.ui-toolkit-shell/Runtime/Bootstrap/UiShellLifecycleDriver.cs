@@ -183,14 +183,35 @@ namespace VTuberSystemBase.UiToolkitShell.Bootstrap
             {
                 case PlayModeStateChange.ExitingPlayMode:
                     StopShellInternal(reason: "PlayModeStateChange.ExitingPlayMode");
+                    ClearHostRegistration();
                     break;
                 case PlayModeStateChange.EnteredEditMode:
                     // Defensive teardown — should already be a no-op because ExitingPlayMode
                     // tore the shell down. Required to honour Requirement 8.5 even if the
                     // ExitingPlayMode hook missed.
                     StopShellInternal(reason: "PlayModeStateChange.EnteredEditMode");
+                    ClearHostRegistration();
                     break;
             }
+        }
+
+        /// <summary>
+        /// Drops the host-supplied factory registration when leaving PlayMode. Under the
+        /// normal "Reload Domain" setting these statics are cleared by the domain reload
+        /// (Requirement 8.6); but when Enter Play Mode Options has <c>DisableDomainReload</c>
+        /// enabled, the statics survive across PlayMode sessions. Without this clear, the next
+        /// PlayMode entry's <see cref="OnRuntimeStart"/> (BeforeSceneLoad) would call
+        /// <see cref="StartShell"/> with the <em>previous</em> session's config provider —
+        /// which captures a now-disposed IPC bus — and start a stale shell before the host
+        /// (e.g. IntegratedDemoBootstrap) re-registers a fresh provider. Clearing here makes
+        /// the driver dormant again so the next run reconfigures cleanly. Invocation counts are
+        /// intentionally left untouched (diagnostic, not lifecycle).
+        /// </summary>
+        private static void ClearHostRegistration()
+        {
+            _configProvider = null;
+            _bootstrapperFactory = null;
+            _diagnosticsLoggerFactory = null;
         }
 
         /// <summary>

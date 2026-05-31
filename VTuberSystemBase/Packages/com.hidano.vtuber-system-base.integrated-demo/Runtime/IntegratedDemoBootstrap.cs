@@ -251,7 +251,16 @@ namespace VTuberSystemBase.IntegratedDemo
             // RuntimeBootstrap.OnBeforeSceneLoad を抑制してしまうため
             // (UNITY_INCLUDE_TESTS が com.unity.test-framework 同梱時は常時立つ)、
             // Sample 経路では Awake 時点で手動 Bootstrap を試みる。
-            if (RuntimeBootstrap.IsBootstrapped) return;
+            //
+            // 判定は RuntimeBootstrap.IsBootstrapped(static フラグ) ではなく
+            // CoreIpcRuntime.Current(実体) の生死で行う。Enter Play Mode Options の
+            // DisableDomainReload 下では static が PlayMode をまたいで残るため、IsBootstrapped は
+            // 前回の起動で true のまま固着する一方、Current は EditorPlayModeBridge が前回の
+            // ExitingPlayMode で Dispose して null 化している。IsBootstrapped で判定すると 2 回目
+            // 以降の再生で再 bootstrap がスキップされ、バス(CoreIpcRuntime.Current.Bus)が永久に
+            // 来ず UI/アダプタが起動しない。Current が生きていれば再起動不要、null なら(初回でも
+            // 2 回目以降でも)新規 bootstrap する、が正しい不変条件。
+            if (CoreIpcRuntime.Current != null) return;
             try
             {
                 Debug.Log("[IntegratedDemoBootstrap] CoreIpcRuntime not bootstrapped; starting manually.");
