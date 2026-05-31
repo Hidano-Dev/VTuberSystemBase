@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Linq;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
 
@@ -25,6 +26,26 @@ namespace VTuberSystemBase.UiToolkitShell.AssetLoading
         public void InitializeAsync(Action<AddressablesInitResult> onCompleted)
         {
             if (onCompleted is null) throw new ArgumentNullException(nameof(onCompleted));
+
+            // 再初期化レース対策（Enter Play Mode の DisableDomainReload 下で顕在化）:
+            // Domain Reload が無効だと Addressables の static 状態が PlayMode セッションをまたいで
+            // 残り、2 回目以降の InitializeAsync() が中途半端な内部状態に対して同期例外
+            // (ArgumentOutOfRangeException: Index was out of range) を投げることがある。
+            // 既にロケータが登録済み＝初期化済みなら、再 init を呼ばずに成功として扱い、その
+            // throw を構造的に回避する。ResourceLocators の参照自体が不整合状態で投げても
+            // 安全側（未初期化扱い）にフォールバックして通常の init パスへ進む。
+            try
+            {
+                if (Addressables.ResourceLocators.Any())
+                {
+                    onCompleted(AddressablesInitResult.Ok());
+                    return;
+                }
+            }
+            catch
+            {
+                // ResourceLocators 列挙が投げた場合は未初期化とみなして init を試みる。
+            }
 
             AsyncOperationHandle<UnityEngine.AddressableAssets.ResourceLocators.IResourceLocator> handle;
             try

@@ -322,8 +322,12 @@ namespace VTuberSystemBase.UiToolkitShell.Bootstrap
             _steps.Add(BootstrapStep.AssetLoaderReady);
 
             // ---- Addressables initialization (runs Sync via callback) ----
+            // 非致命扱い（fail-safe, Requirement 9.1 の「IPC 未接続でも起動完遂」と同じ方針）:
+            // Addressables の設定/コンテンツが未ビルドでも、あるいは init が失敗しても、UI タブ自体は
+            // 描画できる（addressable 由来のサムネ/アバター等だけが遅延的に失敗する）。シェル全体を
+            // 巻き戻すと「コンテンツ未ビルドの開発環境では UI がまったく起動しない」状態になり配信
+            // 運用上致命的なので、ここでは警告ログを残して起動を継続する。
             var initializer = config.AddressablesInitializer ?? new AddressablesInitializer();
-            BootstrapResult? initFailure = null;
             try
             {
                 var initBootstrap = new AddressablesBootstrap(initializer, logger);
@@ -331,22 +335,17 @@ namespace VTuberSystemBase.UiToolkitShell.Bootstrap
                 {
                     if (!result.Success)
                     {
-                        initFailure = result;
+                        logger.Log(LogLevel.Warning, LogCategory.Lifecycle,
+                            $"Addressables initialization failed ({result.Detail}); shell continues without addressable content. " +
+                            "Addressable-backed assets (thumbnails/avatars) stay unavailable until content is built.");
                     }
                 });
             }
             catch (Exception ex)
             {
-                logger.Log(LogLevel.Error, LogCategory.Lifecycle,
-                    $"AddressablesBootstrap threw synchronously: {ex.Message}", ex);
-                Rollback();
-                return BootstrapResult.Fail(BootstrapErrorCode.AddressablesInitFailed,
-                    $"AddressablesBootstrap threw: {ex.Message}");
-            }
-            if (initFailure.HasValue)
-            {
-                Rollback();
-                return initFailure.Value;
+                // Initialize 自体が同期 throw した場合も同様に非致命扱いで継続する。
+                logger.Log(LogLevel.Warning, LogCategory.Lifecycle,
+                    $"AddressablesBootstrap threw synchronously ({ex.Message}); shell continues without addressable content.", ex);
             }
             _steps.Add(BootstrapStep.AddressablesInitialized);
 

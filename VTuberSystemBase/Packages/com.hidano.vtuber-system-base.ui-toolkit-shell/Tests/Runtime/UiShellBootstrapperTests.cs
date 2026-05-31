@@ -300,17 +300,18 @@ namespace VTuberSystemBase.UiToolkitShell.Tests.Runtime
         }
 
         [Test]
-        [Description("Addressables 初期化失敗時は AddressablesInitFailed を返す（task 5.3 連携）")]
-        public void StartShell_AddressablesInitFails_ReturnsAddressablesInitFailed()
+        [Description("Addressables 初期化失敗は非致命：シェルは起動を完遂し IsRunning=true（fail-safe, Req 9.1 と同方針）")]
+        public void StartShell_AddressablesInitFails_IsNonFatalAndShellRuns()
         {
             _addressables.StagedResult = AddressablesInitResult.Fail(detail: "deliberate failure");
             var bootstrapper = MakeBootstrapper();
 
             var result = bootstrapper.StartShell(MakeConfig());
 
-            Assert.That(result.Success, Is.False);
-            Assert.That(result.Error, Is.EqualTo(BootstrapErrorCode.AddressablesInitFailed));
-            Assert.That(bootstrapper.IsRunning, Is.False);
+            Assert.That(result.Success, Is.True,
+                "Addressables 初期化失敗でもシェルは起動を完遂する（コンテンツ未ビルドの開発環境でも UI を立ち上げる）");
+            Assert.That(bootstrapper.IsRunning, Is.True);
+            bootstrapper.StopShell();
         }
 
         // ---- Connection-independent startup (Requirement 9.1, 9.7) ------
@@ -377,15 +378,16 @@ namespace VTuberSystemBase.UiToolkitShell.Tests.Runtime
         }
 
         [Test]
-        [Description("失敗パス（例えば addressables init 失敗）の後はリソースが解放されている")]
+        [Description("致命的失敗パス（タブ mount 失敗）の後はリソースが解放されている。Addressables は非致命化したので致命トリガをタブ mount に変更")]
         public void StartShell_FailureRollsBackPartialState()
         {
-            _addressables.StagedResult = AddressablesInitResult.Fail(detail: "deliberate");
+            _tabMount.ReturnFalse = true;
             var bootstrapper = MakeBootstrapper();
 
             var result = bootstrapper.StartShell(MakeConfig());
 
             Assert.That(result.Success, Is.False);
+            Assert.That(result.Error, Is.EqualTo(BootstrapErrorCode.TabUxmlAttachFailed));
             Assert.That(bootstrapper.IsRunning, Is.False);
             Assert.That(_rootFactory.DisposeInvocationCount, Is.GreaterThanOrEqualTo(1),
                 "Failure path must roll back the root UIDocument it already created");
