@@ -13,11 +13,15 @@ MonoBehaviour:
   m_Name: IntegratedDemoSkinProfile
   m_EditorClassIdentifier: UiToolkitShell.Runtime::VTuberSystemBase.UiToolkitShell.Skin.UiToolkitShellSkinProfile
   RootVisualTreeAsset: {fileID: 9197481963319205126, guid: 66d5fbd8fa4f491faf7b2b8f50c34f14, type: 3}
-  RootStyleSheets: []
+  RootStyleSheets:
+  - {fileID: 7433441132597879392, guid: 984f5b34487a85f41985de8905706311, type: 3}
   CharacterTabVisualTreeAsset: {fileID: 9197481963319205126, guid: 41f8436505aa44478f80854fc5c14440, type: 3}
-  CharacterTabStyleSheets: []
+  CharacterTabStyleSheets:
+  - {fileID: 7433441132597879392, guid: 8c242a2be1be40f385639aa5b60a8b30, type: 3}
   StageLightingTabVisualTreeAsset: {fileID: 9197481963319205126, guid: e235ceb92ca74cec851fec7d40742406, type: 3}
-  StageLightingTabStyleSheets: []
+  StageLightingTabStyleSheets:
+  - {fileID: 7433441132597879392, guid: f2029ec9c6fc40d291dd6f89d42be63f, type: 3}
   CameraSwitcherTabVisualTreeAsset: {fileID: 9197481963319205126, guid: d7670714f5a94cfbb62b3f375de82386, type: 3}
-  CameraSwitcherTabStyleSheets: []
+  CameraSwitcherTabStyleSheets:
+  - {fileID: 7433441132597879392, guid: a3efca007301439e930c590998d11b2b, type: 3}
   CommonUiStyleSheets: []
