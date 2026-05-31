@@ -109,6 +109,17 @@
       "dependencies": {},
       "url": "https://registry.npmjs.com"
     },
+    "com.hidano.vtuber-system-base.avatar-mocap-facial-integration": {
+      "version": "file:com.hidano.vtuber-system-base.avatar-mocap-facial-integration",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.hidano.vtuber-system-base.rac-main-output-adapter": "0.1.0",
+        "com.hidano.vtuber-system-base.character-selection-tab": "0.1.0",
+        "com.hidano.realtimeavatarcontroller": "0.2.0",
+        "com.hidano.realtimeavatarcontroller.mocap-vmc": "0.1.0"
+      }
+    },
     "com.hidano.vtuber-system-base.camera-switcher-output-adapter": {
       "version": "file:com.hidano.vtuber-system-base.camera-switcher-output-adapter",
       "depth": 0,

@@ -1,0 +1,23 @@
+{
+    "name": "VTuberSystemBase.AvatarMocapFacialIntegration.Tests.PlayMode",
+    "rootNamespace": "VTuberSystemBase.AvatarMocapFacialIntegration.Tests.PlayMode",
+    "references": [
+        "GUID:a5d950a30e174ac591b61c8a17c2fd32"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
+}

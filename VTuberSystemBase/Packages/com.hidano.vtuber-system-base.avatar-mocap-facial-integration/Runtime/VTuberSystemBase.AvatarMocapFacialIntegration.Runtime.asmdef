@@ -1,0 +1,21 @@
+{
+    "name": "VTuberSystemBase.AvatarMocapFacialIntegration.Runtime",
+    "rootNamespace": "VTuberSystemBase.AvatarMocapFacialIntegration",
+    "references": [
+        "GUID:9e643d5ab8aa42d89a35ddf4ee1b37e7",
+        "GUID:1e7b25ecbf9f4963b5275a52b2623640",
+        "GUID:8e838212506e43d4b3d698693e67ef1c",
+        "GUID:5875fcfffbaf4bb68170e2da9b68bad0",
+        "GUID:df83c7ab7d1b4f0390e30fd965859ed0",
+        "GUID:cd3d751103e4444099d4cb10ef372a29"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

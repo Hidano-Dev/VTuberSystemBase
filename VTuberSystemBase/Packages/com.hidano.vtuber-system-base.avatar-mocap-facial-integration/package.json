@@ -1,0 +1,27 @@
+{
+  "name": "com.hidano.vtuber-system-base.avatar-mocap-facial-integration",
+  "version": "0.1.0",
+  "displayName": "VTuberSystemBase Avatar Mocap Facial Integration",
+  "description": "Integration layer for VTuberSystemBase that wires RAC avatar resolution, VMC mocap source configuration, and the motion application path. Phase 1 keeps the runtime assembly independent of FacialControl so avatar and mocap features can compile and run before facial integration is enabled.",
+  "unity": "6000.3",
+  "type": "library",
+  "author": {
+    "name": "Hidano",
+    "email": "n.hidano@hidano-dev.com",
+    "url": "https://github.com/Hidano-Dev/VTuberSystemBase"
+  },
+  "keywords": [
+    "vtuber",
+    "avatar",
+    "mocap",
+    "facial",
+    "rac",
+    "vmc"
+  ],
+  "dependencies": {
+    "com.hidano.vtuber-system-base.rac-main-output-adapter": "0.1.0",
+    "com.hidano.vtuber-system-base.character-selection-tab": "0.1.0",
+    "com.hidano.realtimeavatarcontroller": "0.2.0",
+    "com.hidano.realtimeavatarcontroller.mocap-vmc": "0.1.0"
+  }
+}

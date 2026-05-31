@@ -1,0 +1,25 @@
+{
+    "name": "VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode",
+    "rootNamespace": "VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode",
+    "references": [
+        "GUID:a5d950a30e174ac591b61c8a17c2fd32"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
+}
