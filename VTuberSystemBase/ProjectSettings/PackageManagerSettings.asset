@@ -37,6 +37,7 @@ MonoBehaviour:
     - com.neuecc
     - com.cysharp
     - io.github.hatayama.uloopmcp
+    - jp.hadashikick
     m_IsDefault: 0
     m_Capabilities: 0
     m_ConfigSource: 4

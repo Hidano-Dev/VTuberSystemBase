@@ -1,7 +1,12 @@
 {
   "dependencies": {
     "com.cysharp.unitask": "2.5.10",
+    "com.hidano.facialcontrol": "git@github.com:NHidano/FacialControl.git?path=FacialControl/Packages/com.hidano.facialcontrol#feature/hidano/generate-prototype",
+    "com.hidano.facialcontrol.inputsystem": "git@github.com:NHidano/FacialControl.git?path=FacialControl/Packages/com.hidano.facialcontrol.inputsystem#feature/hidano/generate-prototype",
+    "com.hidano.facialcontrol.lipsync": "git@github.com:NHidano/FacialControl.git?path=FacialControl/Packages/com.hidano.facialcontrol.lipsync#feature/hidano/generate-prototype",
+    "com.hidano.facialcontrol.osc": "git@github.com:NHidano/FacialControl.git?path=FacialControl/Packages/com.hidano.facialcontrol.osc#feature/hidano/generate-prototype",
     "com.hidano.realtimeavatarcontroller": "0.2.0",
+    "com.hidano.realtimeavatarcontroller.mocap-vmc": "git@github.com:Hidano-Dev/RealtimeAvatarController.git?path=RealtimeAvatarController/Packages/com.hidano.realtimeavatarcontroller.mocap-vmc#main",
     "com.hidano.runtime-display-selector": "0.1.1",
     "com.hidano.scene-view-style-camera-controller": "1.0.1",
     "com.hidano.ucapi4unity": "0.1.0-preview.2",
@@ -15,6 +20,7 @@
     "com.vrmc.univrm": "https://github.com/vrm-c/UniVRM.git?path=/Packages/VRM#v0.131.0",
     "com.vrmc.vrm": "https://github.com/vrm-c/UniVRM.git?path=/Packages/VRM10#v0.131.0",
     "io.github.hatayama.uloopmcp": "2.1.1",
+    "jp.hadashikick.vcontainer": "1.16.6",
     "jp.keijiro.klak.spout": "2.0.6",
     "com.unity.modules.accessibility": "1.0.0",
     "com.unity.modules.adaptiveperformance": "1.0.0",
@@ -58,7 +64,8 @@
       "scopes": [
         "com.neuecc",
         "com.cysharp",
-        "io.github.hatayama.uloopmcp"
+        "io.github.hatayama.uloopmcp",
+        "jp.hadashikick"
       ]
     },
     {
