@@ -20,6 +20,8 @@
   ],
   "dependencies": {
     "com.hidano.vtuber-system-base.rac-main-output-adapter": "0.1.0",
+    "com.hidano.vtuber-system-base.core-ipc-foundation": "0.1.0",
+    "com.hidano.vtuber-system-base.output-renderer-shell": "0.1.0",
     "com.hidano.vtuber-system-base.character-selection-tab": "0.1.0",
     "com.hidano.realtimeavatarcontroller": "0.2.0",
     "com.hidano.realtimeavatarcontroller.mocap-vmc": "0.1.0"
