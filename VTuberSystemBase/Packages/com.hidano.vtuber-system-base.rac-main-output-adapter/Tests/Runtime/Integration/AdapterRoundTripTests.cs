@@ -73,6 +73,16 @@ namespace VTuberSystemBase.RacMainOutputAdapter.Tests.Integration
             _fixture?.TearDown();
         }
 
+        [Test]
+        public void SlotManager_PropertyExposesInitializedInstanceAndClearsOnShutdown()
+        {
+            Assert.That(_boot.SlotManager, Is.Not.Null);
+
+            _boot.Shutdown();
+
+            Assert.That(_boot.SlotManager, Is.Null);
+        }
+
         [UnityTest]
         public IEnumerator Assignment_AssignsSlot_PublishesAssigningAndAssigned() => UniTask.ToCoroutine(async () =>
         {

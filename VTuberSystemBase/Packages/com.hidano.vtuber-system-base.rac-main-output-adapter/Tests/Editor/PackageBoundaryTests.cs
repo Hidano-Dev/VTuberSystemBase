@@ -1,8 +1,10 @@
 using System.IO;
 using NUnit.Framework;
+using RealtimeAvatarController.Core;
 using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEditorInternal;
+using VTuberSystemBase.RacMainOutputAdapter.Bootstrapper;
 
 namespace VTuberSystemBase.RacMainOutputAdapter.Tests.Editor
 {
@@ -38,6 +40,17 @@ namespace VTuberSystemBase.RacMainOutputAdapter.Tests.Editor
                 Assert.That(json, Does.Not.Contain(name),
                     $"Runtime asmdef must NOT reference forbidden assembly '{name}'.");
             }
+        }
+
+        [Test]
+        public void Bootstrapper_ExposesReadOnlySlotManagerProperty()
+        {
+            var property = typeof(RacMainOutputAdapterBootstrapper).GetProperty(nameof(RacMainOutputAdapterBootstrapper.SlotManager));
+
+            Assert.That(property, Is.Not.Null);
+            Assert.That(property!.PropertyType, Is.EqualTo(typeof(SlotManager)));
+            Assert.That(property.CanRead, Is.True);
+            Assert.That(property.CanWrite, Is.False);
         }
     }
 }

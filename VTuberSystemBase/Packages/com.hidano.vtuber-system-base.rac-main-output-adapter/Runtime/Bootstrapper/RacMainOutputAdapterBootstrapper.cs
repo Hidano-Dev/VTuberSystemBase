@@ -78,6 +78,9 @@ namespace VTuberSystemBase.RacMainOutputAdapter.Bootstrapper
         /// <summary>診断スナップショット API。</summary>
         public IRacMainOutputAdapterDiagnostics Diagnostics => _diagnostics;
 
+        /// <summary>同一 SlotManager を外部の駆動ループへ渡すための read-only 参照。</summary>
+        public SlotManager SlotManager => _slotManager;
+
         /// <summary>初期化済みか（二重 Initialize 防止）。</summary>
         public bool IsRunning => _initialized && !_shutdown;
 
