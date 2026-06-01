@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="14" result="Passed" total="14" passed="14" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.0422747">
+  <test-suite type="TestSuite" id="1000" name="VTuberSystemBase" fullname="VTuberSystemBase" runstate="Runnable" testcasecount="1311" result="Passed" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.042275" total="14" passed="14" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <test-suite type="Assembly" id="1509" name="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.dll" fullname="D:/Personal/Repositries/VTuberSystemBase/VTuberSystemBase/Library/ScriptAssemblies/VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.dll" runstate="Runnable" testcasecount="14" result="Passed" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.031141" total="14" passed="14" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="33472" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <test-suite type="TestSuite" id="1510" name="VTuberSystemBase" fullname="VTuberSystemBase" runstate="Runnable" testcasecount="14" result="Passed" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.030852" total="14" passed="14" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1511" name="AvatarMocapFacialIntegration" fullname="VTuberSystemBase.AvatarMocapFacialIntegration" runstate="Runnable" testcasecount="14" result="Passed" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.030731" total="14" passed="14" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1512" name="Tests" fullname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests" runstate="Runnable" testcasecount="14" result="Passed" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.030637" total="14" passed="14" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestSuite" id="1513" name="EditMode" fullname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode" runstate="Runnable" testcasecount="14" result="Passed" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.030493" total="14" passed="14" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-suite type="TestSuite" id="1517" name="Catalog" fullname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Catalog" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.018354" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-suite type="TestFixture" id="1505" name="AvatarCatalogTests" fullname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Catalog.AvatarCatalogTests" classname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Catalog.AvatarCatalogTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.017706" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                  <properties />
+                  <test-case id="1507" name="OnValidate_LogsDuplicateAvatarKey" fullname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Catalog.AvatarCatalogTests.OnValidate_LogsDuplicateAvatarKey" methodname="OnValidate_LogsDuplicateAvatarKey" classname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Catalog.AvatarCatalogTests" runstate="Runnable" seed="74772990" result="Passed" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.006316" asserts="0">
+                    <properties>
+                      <property name="retryIteration" value="0" />
+                      <property name="repeatIteration" value="0" />
+                    </properties>
+                    <output><![CDATA[AvatarCatalog 'TestCatalog' contains duplicate avatarKey 'avatars/alice' at index 1.
+]]></output>
+                  </test-case>
+                  <test-case id="1508" name="OnValidate_LogsMissingPrefab" fullname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Catalog.AvatarCatalogTests.OnValidate_LogsMissingPrefab" methodname="OnValidate_LogsMissingPrefab" classname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Catalog.AvatarCatalogTests" runstate="Runnable" seed="1212516865" result="Passed" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.000668" asserts="0">
+                    <properties>
+                      <property name="retryIteration" value="0" />
+                      <property name="repeatIteration" value="0" />
+                    </properties>
+                    <output><![CDATA[AvatarCatalog 'TestCatalog' entry 'avatars/alice' at index 0 has no AvatarPrefab.
+]]></output>
+                  </test-case>
+                  <test-case id="1506" name="TryGetEntry_ReturnsMatchingEntry" fullname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Catalog.AvatarCatalogTests.TryGetEntry_ReturnsMatchingEntry" methodname="TryGetEntry_ReturnsMatchingEntry" classname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Catalog.AvatarCatalogTests" runstate="Runnable" seed="2105792800" result="Passed" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.002485" asserts="0">
+                    <properties>
+                      <property name="retryIteration" value="0" />
+                      <property name="repeatIteration" value="0" />
+                    </properties>
+                  </test-case>
+                </test-suite>
+              </test-suite>
+              <test-suite type="TestSuite" id="1516" name="Diagnostics" fullname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Diagnostics" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.005197" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-suite type="TestFixture" id="1501" name="MoCapRegistryProbeTests" fullname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Diagnostics.MoCapRegistryProbeTests" classname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Diagnostics.MoCapRegistryProbeTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.004788" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                  <properties />
+                  <test-case id="1502" name="GetRegisteredTypeIds_ReturnsSortedNonEmptyTypeIds" fullname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Diagnostics.MoCapRegistryProbeTests.GetRegisteredTypeIds_ReturnsSortedNonEmptyTypeIds" methodname="GetRegisteredTypeIds_ReturnsSortedNonEmptyTypeIds" classname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Diagnostics.MoCapRegistryProbeTests" runstate="Runnable" seed="707506291" result="Passed" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.002402" asserts="0">
+                    <properties>
+                      <property name="retryIteration" value="0" />
+                      <property name="repeatIteration" value="0" />
+                    </properties>
+                  </test-case>
+                  <test-case id="1503" name="LogRegisteredTypeIds_LogsRegisteredTypeIdList" fullname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Diagnostics.MoCapRegistryProbeTests.LogRegisteredTypeIds_LogsRegisteredTypeIdList" methodname="LogRegisteredTypeIds_LogsRegisteredTypeIdList" classname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Diagnostics.MoCapRegistryProbeTests" runstate="Runnable" seed="245522002" result="Passed" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.001715" asserts="0">
+                    <properties>
+                      <property name="retryIteration" value="0" />
+                      <property name="repeatIteration" value="0" />
+                    </properties>
+                  </test-case>
+                  <test-case id="1504" name="LogRegisteredTypeIds_WhenNoRegisteredTypeIds_LogsNone" fullname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Diagnostics.MoCapRegistryProbeTests.LogRegisteredTypeIds_WhenNoRegisteredTypeIds_LogsNone" methodname="LogRegisteredTypeIds_WhenNoRegisteredTypeIds_LogsNone" classname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Diagnostics.MoCapRegistryProbeTests" runstate="Runnable" seed="1310551305" result="Passed" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.000148" asserts="0">
+                    <properties>
+                      <property name="retryIteration" value="0" />
+                      <property name="repeatIteration" value="0" />
+                    </properties>
+                  </test-case>
+                </test-suite>
+              </test-suite>
+              <test-suite type="TestSuite" id="1515" name="Mocap" fullname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Mocap" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.001874" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-suite type="TestFixture" id="1499" name="VmcMoCapSourceConfigFactoryTests" fullname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Mocap.VmcMoCapSourceConfigFactoryTests" classname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Mocap.VmcMoCapSourceConfigFactoryTests" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.001635" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+                  <properties />
+                  <test-case id="1500" name="Build_ReturnsVmcDescriptorWithDefaultConfig" fullname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Mocap.VmcMoCapSourceConfigFactoryTests.Build_ReturnsVmcDescriptorWithDefaultConfig" methodname="Build_ReturnsVmcDescriptorWithDefaultConfig" classname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Mocap.VmcMoCapSourceConfigFactoryTests" runstate="Runnable" seed="10156152" result="Passed" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.001279" asserts="0">
+                    <properties>
+                      <property name="retryIteration" value="0" />
+                      <property name="repeatIteration" value="0" />
+                    </properties>
+                  </test-case>
+                </test-suite>
+              </test-suite>
+              <test-suite type="TestSuite" id="1514" name="Resolution" fullname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Resolution" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.004801" total="7" passed="7" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-suite type="TestFixture" id="1490" name="CatalogAvatarKeyResolverTests" fullname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Resolution.CatalogAvatarKeyResolverTests" classname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Resolution.CatalogAvatarKeyResolverTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.003062" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+                  <properties />
+                  <test-case id="1493" name="AvatarKeys_ReturnsCatalogEntriesWithoutAddressables" fullname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Resolution.CatalogAvatarKeyResolverTests.AvatarKeys_ReturnsCatalogEntriesWithoutAddressables" methodname="AvatarKeys_ReturnsCatalogEntriesWithoutAddressables" classname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Resolution.CatalogAvatarKeyResolverTests" runstate="Runnable" seed="548164105" result="Passed" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.000773" asserts="0">
+                    <properties>
+                      <property name="retryIteration" value="0" />
+                      <property name="repeatIteration" value="0" />
+                    </properties>
+                  </test-case>
+                  <test-case id="1494" name="Refresh_RaisesAvatarKeysChanged" fullname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Resolution.CatalogAvatarKeyResolverTests.Refresh_RaisesAvatarKeysChanged" methodname="Refresh_RaisesAvatarKeysChanged" classname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Resolution.CatalogAvatarKeyResolverTests" runstate="Runnable" seed="415104569" result="Passed" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.000577" asserts="0">
+                    <properties>
+                      <property name="retryIteration" value="0" />
+                      <property name="repeatIteration" value="0" />
+                    </properties>
+                  </test-case>
+                  <test-case id="1491" name="Resolve_ReturnsBuiltinDescriptorWithCatalogPrefab" fullname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Resolution.CatalogAvatarKeyResolverTests.Resolve_ReturnsBuiltinDescriptorWithCatalogPrefab" methodname="Resolve_ReturnsBuiltinDescriptorWithCatalogPrefab" classname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Resolution.CatalogAvatarKeyResolverTests" runstate="Runnable" seed="1471897347" result="Passed" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.000555" asserts="0">
+                    <properties>
+                      <property name="retryIteration" value="0" />
+                      <property name="repeatIteration" value="0" />
+                    </properties>
+                  </test-case>
+                  <test-case id="1492" name="Resolve_ReturnsNullAndLogsWarningWhenKeyIsMissing" fullname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Resolution.CatalogAvatarKeyResolverTests.Resolve_ReturnsNullAndLogsWarningWhenKeyIsMissing" methodname="Resolve_ReturnsNullAndLogsWarningWhenKeyIsMissing" classname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Resolution.CatalogAvatarKeyResolverTests" runstate="Runnable" seed="1403013900" result="Passed" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.000545" asserts="0">
+                    <properties>
+                      <property name="retryIteration" value="0" />
+                      <property name="repeatIteration" value="0" />
+                    </properties>
+                  </test-case>
+                </test-suite>
+                <test-suite type="TestFixture" id="1495" name="InMemoryAvatarSchemaProviderTests" fullname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Resolution.InMemoryAvatarSchemaProviderTests" classname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Resolution.InMemoryAvatarSchemaProviderTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.001433" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                  <properties />
+                  <test-case id="1496" name="Resolve_ReturnsEmptySchemaForCatalogAvatarKey" fullname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Resolution.InMemoryAvatarSchemaProviderTests.Resolve_ReturnsEmptySchemaForCatalogAvatarKey" methodname="Resolve_ReturnsEmptySchemaForCatalogAvatarKey" classname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Resolution.InMemoryAvatarSchemaProviderTests" runstate="Runnable" seed="2028616833" result="Passed" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.000545" asserts="0">
+                    <properties>
+                      <property name="retryIteration" value="0" />
+                      <property name="repeatIteration" value="0" />
+                    </properties>
+                  </test-case>
+                  <test-case id="1497" name="Resolve_ReturnsNullForUnknownAvatarKey" fullname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Resolution.InMemoryAvatarSchemaProviderTests.Resolve_ReturnsNullForUnknownAvatarKey" methodname="Resolve_ReturnsNullForUnknownAvatarKey" classname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Resolution.InMemoryAvatarSchemaProviderTests" runstate="Runnable" seed="1442363469" result="Passed" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.000208" asserts="0">
+                    <properties>
+                      <property name="retryIteration" value="0" />
+                      <property name="repeatIteration" value="0" />
+                    </properties>
+                  </test-case>
+                  <test-case id="1498" name="Resolve_ReturnsNullWhenCatalogIsMissing" fullname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Resolution.InMemoryAvatarSchemaProviderTests.Resolve_ReturnsNullWhenCatalogIsMissing" methodname="Resolve_ReturnsNullWhenCatalogIsMissing" classname="VTuberSystemBase.AvatarMocapFacialIntegration.Tests.EditMode.Resolution.InMemoryAvatarSchemaProviderTests" runstate="Runnable" seed="208659732" result="Passed" start-time="2026-06-01 04:55:12Z" end-time="2026-06-01 04:55:12Z" duration="0.000055" asserts="0">
+                    <properties>
+                      <property name="retryIteration" value="0" />
+                      <property name="repeatIteration" value="0" />
+                    </properties>
+                    <output><![CDATA[Saving results to: C:/Users/Hidano/AppData/LocalLow/DefaultCompany/VTuberSystemBase\TestResults.xml
+]]></output>
+                  </test-case>
+                </test-suite>
+              </test-suite>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>
