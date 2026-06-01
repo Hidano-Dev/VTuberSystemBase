@@ -8,6 +8,7 @@
         "GUID:8dd1f7ecef3d4c6cae1a52cee5304e5f",
         "GUID:e95a7c634e3a4a2418485fe836064aee",
         "VTuberSystemBase.RacMainOutputAdapter.Runtime",
+        "VTuberSystemBase.AvatarMocapFacialIntegration.Runtime",
         "VTuberSystemBase.StageLightingVolumeOutputAdapter.Runtime",
         "VTuberSystemBase.CameraSwitcherOutputAdapter.Runtime",
         "UnityEngine.TestRunner",

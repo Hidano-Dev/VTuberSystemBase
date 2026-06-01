@@ -2,6 +2,8 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using VTuberSystemBase.AvatarMocapFacialIntegration.Catalog;
+using VTuberSystemBase.AvatarMocapFacialIntegration.Composition;
 using VTuberSystemBase.CoreIpc.Abstractions;
 using VTuberSystemBase.CoreIpc.Core;
 using VTuberSystemBase.CoreIpc.Core.Configuration;
@@ -9,6 +11,7 @@ using VTuberSystemBase.CoreIpc.Core.Lifecycle;
 using VTuberSystemBase.OutputRendererShell.Dispatch;
 using VTuberSystemBase.OutputRendererShell.Scene;
 using VTuberSystemBase.RacMainOutputAdapter.Bootstrapper;
+using VTuberSystemBase.RacMainOutputAdapter.Internal;
 using VTuberSystemBase.CameraSwitcherOutputAdapter.Runtime;
 using VTuberSystemBase.StageLightingVolumeOutputAdapter.Bootstrap;
 
@@ -52,8 +55,16 @@ namespace VTuberSystemBase.IntegratedDemo
         [SerializeField, Tooltip("Inspector で割り当てた既存の OutputSceneBootstrapper（同一 GameObject 推奨）。null のとき子 GameObject に動的に追加する。")]
         private OutputSceneBootstrapper? _outputSceneBootstrapper;
 
+        [Header("AMFI")]
+        [SerializeField, Tooltip("Assigned catalog enables the AMFI RAC path. Leave empty to use the legacy RacMainOutputAdapterHost path.")]
+        private AvatarCatalog? _amfiAvatarCatalog;
+
+        [SerializeField, Tooltip("When true, IntegratedDemo starts AMFI instead of the legacy RAC Host if an AMFI AvatarCatalog is assigned.")]
+        private bool _preferAmfiWhenConfigured = true;
+
         private CoreIpcBusProvider? _busProvider;
         private RacMainOutputAdapterHost? _racHost;
+        private AmfiCompositionRoot? _amfiRoot;
         private StageLightingVolumeOutputAdapterBootstrapper? _stageHost;
         private CameraSwitcherOutputAdapterBootstrapper? _cameraHost;
         private IDisposable? _inboundBridge;
@@ -63,8 +74,10 @@ namespace VTuberSystemBase.IntegratedDemo
         public OutputSceneBootstrapper? OutputScene => _outputSceneBootstrapper;
         public CoreIpcBusProvider? BusProvider => _busProvider;
         public RacMainOutputAdapterHost? RacHost => _racHost;
+        public AmfiCompositionRoot? AmfiRoot => _amfiRoot;
         public StageLightingVolumeOutputAdapterBootstrapper? StageHost => _stageHost;
         public CameraSwitcherOutputAdapterBootstrapper? CameraHost => _cameraHost;
+        public bool UseAmfiRacPath => _preferAmfiWhenConfigured && _amfiAvatarCatalog != null;
 
         private void Awake()
         {
@@ -138,10 +151,8 @@ namespace VTuberSystemBase.IntegratedDemo
             // 3) UI shell を起動。
             EnsureUiShell();
 
-            // 4) RAC adapter を inactive child GameObject で生成 → bus を inject → activate。
-            //    Awake で AddComponent すると Start が OutputSceneBootstrapper.Start より先に走って
-            //    Dispatcher null で abort してしまうため、ここまで遅延させる。
-            EnsureRacAdapterAfterBusReady();
+            // 4) RAC path. AMFI and the legacy Host are mutually exclusive because both create a SlotManager.
+            EnsureRacPathAfterBusReady();
 
             // 5) Stage adapter は Awake で AddComponent 済み（Start で no-op で抜ける作り）。
             //    Complete 状態の Dispatcher / Roots に対する解決を再起動で確実にする。
@@ -345,9 +356,85 @@ namespace VTuberSystemBase.IntegratedDemo
             _cameraHost = null; // 後段で生成
         }
 
+        public void ConfigureAmfi(AvatarCatalog? avatarCatalog, bool preferAmfiWhenConfigured = true)
+        {
+            _amfiAvatarCatalog = avatarCatalog;
+            _preferAmfiWhenConfigured = preferAmfiWhenConfigured;
+        }
+
+        private void EnsureRacPathAfterBusReady()
+        {
+            if (UseAmfiRacPath)
+            {
+                EnsureAmfiRootAfterBusReady();
+            }
+            else
+            {
+                EnsureRacAdapterAfterBusReady();
+            }
+        }
+
+        private void EnsureAmfiRootAfterBusReady()
+        {
+            if (_amfiRoot != null) return;
+            if (_amfiAvatarCatalog == null)
+            {
+                Debug.LogWarning("[IntegratedDemoBootstrap] AMFI requested but AvatarCatalog is null; falling back to RacMainOutputAdapterHost.");
+                EnsureRacAdapterAfterBusReady();
+                return;
+            }
+
+            try
+            {
+                var dispatcher = _outputSceneBootstrapper?.Dispatcher;
+                var roots = _outputSceneBootstrapper?.Roots;
+                var bus = _busProvider?.Bus;
+                if (dispatcher == null || bus == null)
+                {
+                    Debug.LogWarning(
+                        "[IntegratedDemoBootstrap] Cannot start AMFI RAC path because required services are not ready; "
+                        + $"dispatcher={(dispatcher == null ? "null" : "ok")}, bus={(bus == null ? "null" : "ok")}.");
+                    return;
+                }
+
+                var amfiGo = new GameObject("AmfiCompositionRoot");
+                amfiGo.transform.SetParent(transform, worldPositionStays: false);
+                amfiGo.SetActive(false);
+                _amfiRoot = amfiGo.AddComponent<AmfiCompositionRoot>();
+                _amfiRoot.ConfigureDependencies(
+                    avatarCatalog: _amfiAvatarCatalog,
+                    outputSceneBootstrapper: _outputSceneBootstrapper,
+                    coreIpcBusProviderBehaviour: _busProvider,
+                    autoStart: false);
+                _amfiRoot.OverrideServices(
+                    dispatcher: dispatcher,
+                    sceneRoots: roots,
+                    messageSink: new CoreIpcBusMessageSink(bus));
+                amfiGo.SetActive(true);
+                _amfiRoot.Initialize();
+
+                Debug.Log("[IntegratedDemoBootstrap] AMFI RAC path started; legacy RacMainOutputAdapterHost will not be created.");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[IntegratedDemoBootstrap] AMFI RAC path creation failed; falling back to legacy Host. {ex}");
+                if (_amfiRoot != null)
+                {
+                    try { Destroy(_amfiRoot.gameObject); } catch { /* defensive */ }
+                    _amfiRoot = null;
+                }
+                EnsureRacAdapterAfterBusReady();
+            }
+        }
+
         private void EnsureRacAdapterAfterBusReady()
         {
             if (_racHost != null) return;
+            if (_amfiRoot != null)
+            {
+                Debug.Log("[IntegratedDemoBootstrap] Skipping RacMainOutputAdapterHost because AMFI RAC path is already active.");
+                return;
+            }
             try
             {
                 // RAC host を inactive な child GameObject で生成し、Inject 完了後に activate する。

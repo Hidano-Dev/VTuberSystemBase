@@ -53,6 +53,22 @@ namespace VTuberSystemBase.AvatarMocapFacialIntegration.Composition
         public RacMainOutputAdapterBootstrapper Bootstrapper => _bootstrapper;
         public SlotMotionDriver Driver => _slotMotionDriver;
         public bool IsRunning => _bootstrapper?.IsRunning == true;
+        public bool HasAvatarCatalog => _avatarCatalog != null;
+
+        public void ConfigureDependencies(
+            AvatarCatalog avatarCatalog = null,
+            OutputSceneBootstrapper outputSceneBootstrapper = null,
+            MonoBehaviour coreIpcBusProviderBehaviour = null,
+            bool? autoStart = null)
+        {
+            _avatarCatalog = avatarCatalog ?? _avatarCatalog;
+            _outputSceneBootstrapper = outputSceneBootstrapper ?? _outputSceneBootstrapper;
+            _coreIpcBusProviderBehaviour = coreIpcBusProviderBehaviour ?? _coreIpcBusProviderBehaviour;
+            if (autoStart.HasValue)
+            {
+                _autoStart = autoStart.Value;
+            }
+        }
 
         public void OverrideServices(
             IOutputCommandDispatcher dispatcher = null,
