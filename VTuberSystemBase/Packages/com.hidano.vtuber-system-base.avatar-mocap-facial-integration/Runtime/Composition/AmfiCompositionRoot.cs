@@ -10,6 +10,7 @@ using VTuberSystemBase.RacMainOutputAdapter.Bootstrapper;
 using VTuberSystemBase.RacMainOutputAdapter.Diagnostics;
 using VTuberSystemBase.RacMainOutputAdapter.Drivers;
 using VTuberSystemBase.RacMainOutputAdapter.Internal;
+using RealtimeAvatarController.Core;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -37,6 +38,7 @@ namespace VTuberSystemBase.AvatarMocapFacialIntegration.Composition
 
         [Header("Lifecycle")]
         [SerializeField] private bool _autoStart = true;
+        [SerializeField] private bool _enableFacial;
 
         [Header("Diagnostics")]
         [SerializeField] private AdapterLogLevel _minLogLevel = AdapterLogLevel.Info;
@@ -48,6 +50,7 @@ namespace VTuberSystemBase.AvatarMocapFacialIntegration.Composition
         private SlotMotionDriver _injectedDriver;
 
         private RacMainOutputAdapterBootstrapper _bootstrapper;
+        private IFacialAttacherBridge _facialAttacher;
         private bool _started;
 
         public RacMainOutputAdapterBootstrapper Bootstrapper => _bootstrapper;
@@ -59,7 +62,8 @@ namespace VTuberSystemBase.AvatarMocapFacialIntegration.Composition
             AvatarCatalog avatarCatalog = null,
             OutputSceneBootstrapper outputSceneBootstrapper = null,
             MonoBehaviour coreIpcBusProviderBehaviour = null,
-            bool? autoStart = null)
+            bool? autoStart = null,
+            bool? enableFacial = null)
         {
             _avatarCatalog = avatarCatalog ?? _avatarCatalog;
             _outputSceneBootstrapper = outputSceneBootstrapper ?? _outputSceneBootstrapper;
@@ -67,6 +71,11 @@ namespace VTuberSystemBase.AvatarMocapFacialIntegration.Composition
             if (autoStart.HasValue)
             {
                 _autoStart = autoStart.Value;
+            }
+
+            if (enableFacial.HasValue)
+            {
+                _enableFacial = enableFacial.Value;
             }
         }
 
@@ -158,11 +167,14 @@ namespace VTuberSystemBase.AvatarMocapFacialIntegration.Composition
             }
 
             EnsureDriver().Attach(slotManager);
+            AttachFacialIfEnabled(slotManager);
             _started = true;
         }
 
         public void Shutdown()
         {
+            DetachFacial();
+
             try
             {
                 _slotMotionDriver?.Detach();
@@ -245,6 +257,96 @@ namespace VTuberSystemBase.AvatarMocapFacialIntegration.Composition
             }
 
             return _slotMotionDriver;
+        }
+
+        private void AttachFacialIfEnabled(SlotManager slotManager)
+        {
+            if (!_enableFacial) return;
+
+            _facialAttacher ??= ReflectionFacialAttacherBridge.Create();
+            if (_facialAttacher == null)
+            {
+                Debug.LogWarning("[AmfiCompositionRoot] Facial is enabled, but FacialControllerAttacher is not available.");
+                return;
+            }
+
+            try
+            {
+                _facialAttacher.Attach(slotManager, _avatarCatalog);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[AmfiCompositionRoot] FacialControllerAttacher.Attach threw: {ex}");
+            }
+        }
+
+        private void DetachFacial()
+        {
+            try
+            {
+                _facialAttacher?.Detach();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[AmfiCompositionRoot] FacialControllerAttacher.Detach threw: {ex}");
+            }
+            finally
+            {
+                _facialAttacher = null;
+            }
+        }
+
+        private interface IFacialAttacherBridge
+        {
+            void Attach(SlotManager slotManager, AvatarCatalog catalog);
+            void Detach();
+        }
+
+        private sealed class ReflectionFacialAttacherBridge : IFacialAttacherBridge
+        {
+            private const string AttacherTypeName =
+                "VTuberSystemBase.AvatarMocapFacialIntegration.Facial.FacialControllerAttacher, VTuberSystemBase.AvatarMocapFacialIntegration.Facial";
+
+            private readonly object _instance;
+            private readonly System.Reflection.MethodInfo _attachMethod;
+            private readonly System.Reflection.MethodInfo _detachMethod;
+
+            private ReflectionFacialAttacherBridge(
+                object instance,
+                System.Reflection.MethodInfo attachMethod,
+                System.Reflection.MethodInfo detachMethod)
+            {
+                _instance = instance;
+                _attachMethod = attachMethod;
+                _detachMethod = detachMethod;
+            }
+
+            public static ReflectionFacialAttacherBridge Create()
+            {
+                var type = Type.GetType(AttacherTypeName);
+                if (type == null) return null;
+
+                var attachMethod = type.GetMethod(
+                    "Attach",
+                    new[] { typeof(SlotManager), typeof(AvatarCatalog) });
+                var detachMethod = type.GetMethod("Detach", Type.EmptyTypes);
+                if (attachMethod == null || detachMethod == null) return null;
+
+                return new ReflectionFacialAttacherBridge(
+                    Activator.CreateInstance(type),
+                    attachMethod,
+                    detachMethod);
+            }
+
+            public void Attach(SlotManager slotManager, AvatarCatalog catalog)
+            {
+                _attachMethod.Invoke(_instance, new object[] { slotManager, catalog });
+            }
+
+            public void Detach()
+            {
+                _detachMethod.Invoke(_instance, Array.Empty<object>());
+            }
         }
 
 #if UNITY_EDITOR

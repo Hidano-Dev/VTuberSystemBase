@@ -3,6 +3,7 @@ using System.Reflection;
 using NUnit.Framework;
 using RealtimeAvatarController.Core;
 using UnityEngine;
+using VTuberSystemBase.AvatarMocapFacialIntegration.Catalog;
 using VTuberSystemBase.AvatarMocapFacialIntegration.Composition;
 using VTuberSystemBase.AvatarMocapFacialIntegration.Mocap;
 using VTuberSystemBase.AvatarMocapFacialIntegration.Resolution;
@@ -25,6 +26,7 @@ namespace VTuberSystemBase.AvatarMocapFacialIntegration.Tests.PlayMode.Compositi
         private OutputCommandDispatcher _dispatcher;
         private NoOpMessageSink _sink;
         private RecordingLogger _logger;
+        private AvatarCatalog _catalog;
 
         [SetUp]
         public void SetUp()
@@ -34,6 +36,7 @@ namespace VTuberSystemBase.AvatarMocapFacialIntegration.Tests.PlayMode.Compositi
             _dispatcher = new OutputCommandDispatcher(new OutputShellLogger(ShellLogLevel.Error));
             _sink = new NoOpMessageSink();
             _logger = new RecordingLogger();
+            _catalog = ScriptableObject.CreateInstance<AvatarCatalog>();
         }
 
         [TearDown]
@@ -45,6 +48,11 @@ namespace VTuberSystemBase.AvatarMocapFacialIntegration.Tests.PlayMode.Compositi
             if (_gameObject != null)
             {
                 UnityEngine.Object.DestroyImmediate(_gameObject);
+            }
+
+            if (_catalog != null)
+            {
+                UnityEngine.Object.DestroyImmediate(_catalog);
             }
         }
 
@@ -88,6 +96,40 @@ namespace VTuberSystemBase.AvatarMocapFacialIntegration.Tests.PlayMode.Compositi
             Assert.That(_root.IsRunning, Is.False);
             Assert.That(_root.Bootstrapper, Is.Null);
             Assert.That(GetPrivateField(driver, "_slotManager"), Is.Null);
+        }
+
+        [Test]
+        public void Initialize_WhenFacialDisabled_DoesNotCreateFacialAttacher()
+        {
+            _root.ConfigureDependencies(avatarCatalog: _catalog, enableFacial: false);
+            _root.OverrideServices(
+                dispatcher: _dispatcher,
+                messageSink: _sink,
+                logger: _logger);
+
+            _root.Initialize();
+
+            Assert.That(_root.IsRunning, Is.True);
+            Assert.That(GetPrivateField(_root, "_facialAttacher"), Is.Null);
+        }
+
+        [Test]
+        public void Initialize_WhenFacialEnabled_CreatesAttacherAndShutdownDetachesIt()
+        {
+            _root.ConfigureDependencies(avatarCatalog: _catalog, enableFacial: true);
+            _root.OverrideServices(
+                dispatcher: _dispatcher,
+                messageSink: _sink,
+                logger: _logger);
+
+            _root.Initialize();
+
+            Assert.That(_root.IsRunning, Is.True);
+            Assert.That(GetPrivateField(_root, "_facialAttacher"), Is.Not.Null);
+
+            _root.Shutdown();
+
+            Assert.That(GetPrivateField(_root, "_facialAttacher"), Is.Null);
         }
 
         private static object GetPrivateField(object target, string fieldName)
