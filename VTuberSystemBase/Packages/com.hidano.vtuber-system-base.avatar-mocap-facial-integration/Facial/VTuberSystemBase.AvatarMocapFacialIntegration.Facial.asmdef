@@ -3,6 +3,8 @@
     "rootNamespace": "VTuberSystemBase.AvatarMocapFacialIntegration.Facial",
     "references": [
         "GUID:a5d950a30e174ac591b61c8a17c2fd32",
+        "GUID:5875fcfffbaf4bb68170e2da9b68bad0",
+        "GUID:8e838212506e43d4b3d698693e67ef1c",
         "GUID:c5b6577002bae5c4ca7404fad3c44f30"
     ],
     "includePlatforms": [],
